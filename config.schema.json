@@ -1,0 +1,88 @@
+{
+  "headerDisplay": "Make sure to give set the right IP address for the Serial Bridge. If the bridge WEB UI doesn't ron on port 80, please specify the port as well.",
+  "footerDisplay": "See [homebridge-comelit-sb](https://github.com/madchicken/homebridge-comelit-sb) for more information and instructions.",
+  "pluginAlias": "Comelit Serial Bridge",
+  "pluginType": "platform",
+  "schema": {
+    "type": "object",
+    "title": "Vedo alarm configuration",
+    "properties": {
+      "alarm_address": {
+        "title": "IP address for VEDO alarm (if present)",
+        "type": "string",
+        "required": false
+      },
+      "alarm_port": {
+        "title": "HTTP port VEDO alarm (if present)",
+        "type": "integer",
+        "maximum": 65535,
+        "required": false
+      },
+      "alarm_code": {
+        "title": "Secret code for VEDO alarm (if present)",
+        "type": "string",
+        "required": false
+      },
+      "disable_alarm": {
+        "title": "Disable VEDO alarm accessory",
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "advanced": {
+        "title": "Advanced configuration",
+        "type": "object",
+        "properties": {
+          "login": {
+            "title": "Path for login action",
+            "type": "string",
+            "required": true,
+            "default": "/login.cgi"
+          },
+          "login_info": {
+            "title": "Path for login info action",
+            "type": "string",
+            "required": true,
+            "default": "/login.json"
+          },
+          "area_desc": {
+            "title": "Path for area_desc request",
+            "type": "string",
+            "required": true,
+            "default": "/user/area_desc.json"
+          },
+          "area_stat": {
+            "title": "Path for area_stat request",
+            "type": "string",
+            "required": true,
+            "default": "/user/area_stat.json"
+          },
+          "zone_desc": {
+            "title": "Path for zone_desc request",
+            "type": "string",
+            "required": true,
+            "default": "/user/zone_desc.json"
+          },
+          "zone_stat": {
+            "title": "Path for zone_stat request",
+            "type": "string",
+            "required": true,
+            "default": "/user/zone_stat.json"
+          },
+          "action": {
+            "title": "Path for action request",
+            "type": "string",
+            "required": true,
+            "default": "/action.cgi"
+          },
+          "code_param": {
+            "title": "Name for parameter to use as code when logging in (usually code or alm)",
+            "type": "string",
+            "required": true,
+            "default": "code"
+          }
+        }
+      }
+    }
+  }
+}
