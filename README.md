@@ -1,4 +1,4 @@
-[![npm version](https://badge.fury.io/js/homebridge-comelit-platform.svg)](https://badge.fury.io/js/homebridge-comelit-platform)
+[![npm version](https://badge.fury.io/js/homebridge-comelit-vedo.svg)](https://badge.fury.io/js/homebridge-comelit-vedo)
 
 # Comelit VEDO integration for Homebridge
 
