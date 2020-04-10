@@ -40,7 +40,7 @@ Default config comes with this values:
 }
 ```
 
-A possible configuration could be:
+A possible alternative configuration for Vedo without an IP could be:
 
 ```json
 {
@@ -64,3 +64,7 @@ A possible configuration could be:
 ## Version History
 
 1.0.0 - Initial version
+
+## Screenshots
+
+![Home application screenshot](https://github.com/madchicken/homebridge-comelit-vedo/raw/master/images/vedo.png)
