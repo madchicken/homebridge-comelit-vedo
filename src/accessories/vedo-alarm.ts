@@ -3,21 +3,21 @@ import {
   Categories,
   Characteristic,
   CharacteristicEventTypes,
-  Service,
-} from 'hap-nodejs';
-import { HomebridgeAPI } from '../index';
-import {AlarmArea, VedoClient, VedoClientConfig} from 'comelit-client';
+  Service
+} from "hap-nodejs";
+import { HomebridgeAPI } from "../index";
+import { AlarmArea, VedoClient, VedoClientConfig } from "comelit-client";
 import {
   SecuritySystemCurrentState,
-  SecuritySystemTargetState,
-} from 'hap-nodejs/dist/lib/gen/HomeKit';
+  SecuritySystemTargetState
+} from "hap-nodejs/dist/lib/gen/HomeKit";
 import Timeout = NodeJS.Timeout;
 
 const DEFAULT_ALARM_CHECK_TIMEOUT = 5000;
 
 export class VedoAlarm {
   private readonly code: string;
-  private readonly client: VedoClient;
+  readonly client: VedoClient;
   readonly log: Function;
   readonly name: string;
   readonly category: Categories;
@@ -36,22 +36,28 @@ export class VedoAlarm {
   ) {
     this.log = (str: string) => log(`[Vedo Alarm] ${str}`);
     this.code = code;
-    this.name = 'Vedo Alarm @ ' + address;
+    this.name = "Vedo Alarm @ " + address;
     this.category = Categories.SECURITY_SYSTEM;
     this.checkFrequency = checkFrequency;
     this.client = new VedoClient(address, port, config);
   }
 
   getServices(): Service[] {
-    const accessoryInformation = new HomebridgeAPI.hap.Service.AccessoryInformation(null, null);
+    const accessoryInformation = new HomebridgeAPI.hap.Service.AccessoryInformation(
+      null,
+      null
+    );
     accessoryInformation
-      .setCharacteristic(Characteristic.Name, 'Vedo Alarm')
-      .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
-      .setCharacteristic(Characteristic.Model, 'None')
-      .setCharacteristic(Characteristic.FirmwareRevision, 'None')
-      .setCharacteristic(Characteristic.SerialNumber, 'None');
+      .setCharacteristic(Characteristic.Name, "Vedo Alarm")
+      .setCharacteristic(Characteristic.Manufacturer, "Comelit")
+      .setCharacteristic(Characteristic.Model, "None")
+      .setCharacteristic(Characteristic.FirmwareRevision, "None")
+      .setCharacteristic(Characteristic.SerialNumber, "None");
 
-    this.securityService = new HomebridgeAPI.hap.Service.SecuritySystem('Vedo Alarm', null);
+    this.securityService = new HomebridgeAPI.hap.Service.SecuritySystem(
+      "Vedo Alarm",
+      null
+    );
     this.securityService
       .getCharacteristic(Characteristic.SecuritySystemCurrentState)
       .setValue(SecuritySystemCurrentState.DISARMED);
@@ -78,7 +84,9 @@ export class VedoAlarm {
           } else {
             callback(
               null,
-              armed ? SecuritySystemCurrentState.AWAY_ARM : SecuritySystemCurrentState.DISARMED
+              armed
+                ? SecuritySystemCurrentState.AWAY_ARM
+                : SecuritySystemCurrentState.DISARMED
             );
           }
         } catch (e) {
@@ -88,26 +96,29 @@ export class VedoAlarm {
 
     this.securityService
       .getCharacteristic(Characteristic.SecuritySystemTargetState)
-      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) => {
-        try {
-          const uid = await this.client.loginWithRetry(this.code);
-          if (uid) {
-            if (value === SecuritySystemTargetState.DISARM) {
-              this.log('Disarming system');
-              await this.client.disarm(uid, 32);
-              callback();
+      .on(
+        CharacteristicEventTypes.SET,
+        async (value: number, callback: Callback) => {
+          try {
+            const uid = await this.client.loginWithRetry(this.code);
+            if (uid) {
+              if (value === SecuritySystemTargetState.DISARM) {
+                this.log("Disarming system");
+                await this.client.disarm(uid, 32);
+                callback();
+              } else {
+                this.log("Arming system");
+                await this.client.arm(uid, 32);
+                callback();
+              }
             } else {
-              this.log('Arming system');
-              await this.client.arm(uid, 32);
-              callback();
+              callback(new Error("Cannot login into system"));
             }
-          } else {
-            callback(new Error('Cannot login into system'));
+          } catch (e) {
+            callback(e);
           }
-        } catch (e) {
-          callback(e);
         }
-      });
+      );
 
     this.timeout = setTimeout(async () => {
       this.checkAlarm();
@@ -135,7 +146,9 @@ export class VedoAlarm {
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
         .updateValue(
-          status ? SecuritySystemCurrentState.STAY_ARM : SecuritySystemCurrentState.DISARMED
+          status
+            ? SecuritySystemCurrentState.STAY_ARM
+            : SecuritySystemCurrentState.DISARMED
         );
     }
   }

@@ -6,6 +6,7 @@ export interface HubConfig {
   alarm_address: string;
   alarm_port?: number;
   alarm_code: string;
+  map_sensors: boolean;
   update_interval?: number;
   advanced?: VedoClientConfig;
 }
@@ -36,15 +37,22 @@ export class ComelitVedoPlatform {
         `Map VEDO alarm @ ${this.config.alarm_address}:${this.config
           .alarm_port || 80}`
       );
+      const checkFrequency = this.config.update_interval
+        ? this.config.update_interval * 1000
+        : null;
+      const config = this.config.advanced || {};
       const alarm: VedoAlarm = new VedoAlarm(
         this.log,
         this.config.alarm_address,
         this.config.alarm_port,
         this.config.alarm_code,
-        this.config.advanced || {}
+        config,
+        checkFrequency
       );
       callback([alarm]);
       return;
+    } else {
+      this.log("Invalid configuration ", this.config);
     }
     callback([]);
   }

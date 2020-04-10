@@ -1,20 +1,21 @@
 {
   "headerDisplay": "Make sure to give set the right IP address for the Serial Bridge. If the bridge WEB UI doesn't ron on port 80, please specify the port as well.",
   "footerDisplay": "See [homebridge-comelit-sb](https://github.com/madchicken/homebridge-comelit-sb) for more information and instructions.",
-  "pluginAlias": "Comelit Serial Bridge",
+  "pluginAlias": "ComelitVedo",
   "pluginType": "platform",
   "schema": {
     "type": "object",
     "title": "Vedo alarm configuration",
     "properties": {
       "alarm_address": {
-        "title": "IP address for VEDO alarm (if present)",
+        "title": "HTTP address for VEDO alarm",
         "type": "string",
-        "required": false
+        "required": true
       },
       "alarm_port": {
-        "title": "HTTP port VEDO alarm (if present)",
+        "title": "HTTP port VEDO alarm",
         "type": "integer",
+        "default": 80,
         "maximum": 65535,
         "required": false
       },
@@ -23,14 +24,18 @@
         "type": "string",
         "required": false
       },
-      "disable_alarm": {
-        "title": "Disable VEDO alarm accessory",
-        "type": "boolean",
-        "required": false,
-        "default": false
+      "update_interval": {
+        "title": "Update timeout",
+        "description": "Number of seconds to poll the alarm for a refresh",
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 60
       },
       "advanced": {
         "title": "Advanced configuration",
+        "expandable": true,
+        "expanded": false,
         "type": "object",
         "properties": {
           "login": {
