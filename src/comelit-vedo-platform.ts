@@ -3,7 +3,7 @@ import { VedoAlarm } from "./accessories/vedo-alarm";
 import { Homebridge } from "../types";
 
 export interface HubConfig {
-  alarm_url: string;
+  alarm_address: string;
   alarm_port?: number;
   alarm_code: string;
   update_interval?: number;
@@ -31,37 +31,25 @@ export class ComelitVedoPlatform {
   }
 
   async accessories(callback: (array: any[]) => void) {
-    if (this.config && this.config.alarm_url) {
+    if (this.hasValidConfig()) {
       this.log(
-        `Map VEDO alarm @ ${this.config.alarm_url}:${this.config.alarm_port ||
-          80}`
+        `Map VEDO alarm @ ${this.config.alarm_address}:${this.config
+          .alarm_port || 80}`
       );
-      const alarm: VedoAlarm = await this.mapAlarm();
-      if (alarm) {
-        callback([alarm]);
-      } else {
-        callback([]);
-      }
-    }
-  }
-
-  private async mapAlarm(): Promise<VedoAlarm> {
-    if (this.config.alarm_code) {
-      this.log(
-        `Alarm is enabled, mapping it at ${this.config.alarm_url} port ${this
-          .config.alarm_port || 80}`
-      );
-      return new VedoAlarm(
+      const alarm: VedoAlarm = new VedoAlarm(
         this.log,
-        this.config.alarm_url,
+        this.config.alarm_address,
         this.config.alarm_port,
         this.config.alarm_code,
         this.config.advanced || {}
       );
-    } else {
-      this.log(
-        "Alarm enabled but not properly configured: missing access code"
-      );
+      callback([alarm]);
+      return;
     }
+    callback([]);
+  }
+
+  private hasValidConfig() {
+    return this.config && this.config.alarm_address && this.config.alarm_code;
   }
 }
