@@ -57,9 +57,9 @@ export class ComelitVedoPlatform {
       );
       if (this.config.map_sensors) {
         const zones = await alarm.fetchZones();
-        this.mappedZones = zones.map(
-          zone => new VedoSensor(this.log, zone.description, zone)
-        );
+        this.mappedZones = zones
+          .filter(zone => zone.description !== "")
+          .map(zone => new VedoSensor(this.log, zone.description, zone));
       }
 
       callback(
@@ -72,9 +72,9 @@ export class ComelitVedoPlatform {
           if (this.config.map_sensors) {
             const zones = await alarm.fetchZones();
             if (zones) {
-              zones.forEach((zone, index) =>
-                this.mappedZones[index].update(zone)
-              );
+              zones
+                .filter(zone => zone.description !== "")
+                .forEach((zone, index) => this.mappedZones[index].update(zone));
             }
           }
         }
