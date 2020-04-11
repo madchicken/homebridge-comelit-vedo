@@ -12,7 +12,7 @@ export class VedoSensor {
 
   constructor(log: Function, name: string, zoneStatus: ZoneStatus) {
     this.log = (str: string) => log(`[Sensor] ${str}`);
-    this.name = `Vedo Sensor ${name}`;
+    this.name = name;
     this.category = Categories.SENSOR;
     this.zoneStatus = zoneStatus;
   }
