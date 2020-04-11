@@ -6,7 +6,12 @@ import {
   Service
 } from "hap-nodejs";
 import { HomebridgeAPI } from "../index";
-import { AlarmArea, VedoClient, VedoClientConfig } from "comelit-client";
+import {
+  AlarmArea,
+  VedoClient,
+  VedoClientConfig,
+  ZoneStatus
+} from "comelit-client";
 import {
   SecuritySystemCurrentState,
   SecuritySystemTargetState
@@ -22,7 +27,6 @@ export class VedoAlarm {
   readonly name: string;
   readonly category: Categories;
   private securityService: Service;
-  private timeout: Timeout;
   private readonly checkFrequency: number;
   private lastUID: string;
 
@@ -120,51 +124,62 @@ export class VedoAlarm {
         }
       );
 
-    this.timeout = setTimeout(async () => {
-      this.checkAlarm();
-    }, this.checkFrequency);
-
     return [accessoryInformation, this.securityService];
   }
 
   update(alarmAreas: AlarmArea[]) {
+    const currentStatus = this.securityService.getCharacteristic(
+      Characteristic.SecuritySystemCurrentState
+    ).value;
+
     const status = alarmAreas.reduce(
       (armed: boolean, area: AlarmArea) => armed || area.armed,
       false
     );
     this.log(`Alarm status is ${status}`);
     const trigger = alarmAreas.reduce(
-      (armed: boolean, area: AlarmArea) => armed || area.triggered,
+      (triggered: boolean, area: AlarmArea) => triggered || area.triggered,
       false
     );
-    this.log(`Alarm trigger is ${status}`);
-    if (trigger) {
+    this.log(`Alarm trigger is ${trigger}`);
+    if (
+      trigger &&
+      currentStatus !== SecuritySystemCurrentState.ALARM_TRIGGERED
+    ) {
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
         .updateValue(SecuritySystemCurrentState.ALARM_TRIGGERED);
     } else {
-      this.securityService
-        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .updateValue(
-          status
-            ? SecuritySystemCurrentState.STAY_ARM
-            : SecuritySystemCurrentState.DISARMED
-        );
+      const newStatus = status
+        ? SecuritySystemCurrentState.STAY_ARM
+        : SecuritySystemCurrentState.DISARMED;
+      if (currentStatus !== newStatus) {
+        this.securityService
+          .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+          .updateValue(newStatus);
+      }
     }
   }
 
-  private async checkAlarm() {
+  async fetchZones(): Promise<ZoneStatus[]> {
+    return await this.withRetry<ZoneStatus[]>(this.client.zoneStatus);
+  }
+
+  async checkAlarm(): Promise<AlarmArea[]> {
+    return await this.withRetry<AlarmArea[]>(this.client.findActiveAreas);
+  }
+
+  async withRetry<T>(fn: (uid: string) => Promise<T>): Promise<T> {
     try {
       const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
       if (uid) {
         this.lastUID = uid;
-        const alarmAreas = await this.client.findActiveAreas(uid);
-        this.update(alarmAreas);
+        return await fn.call(this, uid);
       }
     } catch (e) {
       this.lastUID = null;
       this.log(e.message);
     }
-    this.timeout.refresh();
+    return null;
   }
 }

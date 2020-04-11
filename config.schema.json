@@ -8,6 +8,12 @@
     "type": "object",
     "title": "Vedo alarm configuration",
     "properties": {
+      "name": {
+        "title": "Alarm name",
+        "type": "string",
+        "required": true,
+        "default": "VEDO"
+      },
       "alarm_address": {
         "title": "HTTP address for VEDO alarm",
         "type": "string",
@@ -32,6 +38,12 @@
         "default": 5,
         "minimum": 1,
         "maximum": 60
+      },
+      "map_sensors": {
+        "title": "Map alarm sensors as occupancy sensors in HomeKit",
+        "type": "boolean",
+        "required": false,
+        "default": false
       },
       "advanced": {
         "title": "Advanced configuration",
