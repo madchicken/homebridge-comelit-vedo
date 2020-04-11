@@ -65,11 +65,18 @@ export class ComelitVedoPlatform {
       callback([alarm]);
       this.timeout = setTimeout(async () => {
         const alarmAreas = await alarm.checkAlarm();
-        alarm.update(alarmAreas);
-        if (this.config.map_sensors) {
-          const zones = await alarm.fetchZones();
-          zones.forEach((zone, index) => this.mappedZones[index].update(zone));
+        if (alarmAreas) {
+          alarm.update(alarmAreas);
+          if (this.config.map_sensors) {
+            const zones = await alarm.fetchZones();
+            if (zones) {
+              zones.forEach((zone, index) =>
+                this.mappedZones[index].update(zone)
+              );
+            }
+          }
         }
+        this.timeout.refresh();
       }, checkFrequency);
       return;
     } else {
