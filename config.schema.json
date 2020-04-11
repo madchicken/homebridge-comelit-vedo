@@ -28,7 +28,7 @@
       },
       "alarm_code": {
         "title": "Secret code for VEDO alarm",
-        "type": "password",
+        "type": "text",
         "required": true
       },
       "update_interval": {
@@ -49,8 +49,8 @@
         "title": "Advanced configuration",
         "expandable": true,
         "expanded": false,
-        "type": "fieldset",
-        "items": [
+        "type": "object",
+        "properties": [
           {
             "login": {
               "title": "Path for login action",
