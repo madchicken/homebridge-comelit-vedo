@@ -48,58 +48,56 @@
       "advanced": {
         "title": "Advanced configuration",
         "type": "object",
-        "properties": [
-          {
-            "login": {
-              "title": "Path for login action",
-              "type": "string",
-              "required": true,
-              "default": "/login.cgi"
-            },
-            "login_info": {
-              "title": "Path for login info action",
-              "type": "string",
-              "required": true,
-              "default": "/login.json"
-            },
-            "area_desc": {
-              "title": "Path for area_desc request",
-              "type": "string",
-              "required": true,
-              "default": "/user/area_desc.json"
-            },
-            "area_stat": {
-              "title": "Path for area_stat request",
-              "type": "string",
-              "required": true,
-              "default": "/user/area_stat.json"
-            },
-            "zone_desc": {
-              "title": "Path for zone_desc request",
-              "type": "string",
-              "required": true,
-              "default": "/user/zone_desc.json"
-            },
-            "zone_stat": {
-              "title": "Path for zone_stat request",
-              "type": "string",
-              "required": true,
-              "default": "/user/zone_stat.json"
-            },
-            "action": {
-              "title": "Path for action request",
-              "type": "string",
-              "required": true,
-              "default": "/action.cgi"
-            },
-            "code_param": {
-              "title": "Name for parameter to use as code when logging in (usually code or alm)",
-              "type": "string",
-              "required": true,
-              "default": "code"
-            }
+        "properties": {
+          "login": {
+            "title": "Path for login action",
+            "type": "string",
+            "required": true,
+            "default": "/login.cgi"
+          },
+          "login_info": {
+            "title": "Path for login info action",
+            "type": "string",
+            "required": true,
+            "default": "/login.json"
+          },
+          "area_desc": {
+            "title": "Path for area_desc request",
+            "type": "string",
+            "required": true,
+            "default": "/user/area_desc.json"
+          },
+          "area_stat": {
+            "title": "Path for area_stat request",
+            "type": "string",
+            "required": true,
+            "default": "/user/area_stat.json"
+          },
+          "zone_desc": {
+            "title": "Path for zone_desc request",
+            "type": "string",
+            "required": true,
+            "default": "/user/zone_desc.json"
+          },
+          "zone_stat": {
+            "title": "Path for zone_stat request",
+            "type": "string",
+            "required": true,
+            "default": "/user/zone_stat.json"
+          },
+          "action": {
+            "title": "Path for action request",
+            "type": "string",
+            "required": true,
+            "default": "/action.cgi"
+          },
+          "code_param": {
+            "title": "Name for parameter to use as code when logging in (usually code or alm)",
+            "type": "string",
+            "required": true,
+            "default": "code"
           }
-        ]
+        }
       }
     }
   }
