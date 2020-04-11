@@ -62,7 +62,9 @@ export class ComelitVedoPlatform {
         );
       }
 
-      callback([alarm]);
+      callback(
+        this.config.map_sensors ? [alarm, ...this.mappedZones] : [alarm]
+      );
       this.timeout = setTimeout(async () => {
         const alarmAreas = await alarm.checkAlarm();
         if (alarmAreas) {
