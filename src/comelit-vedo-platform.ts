@@ -1,8 +1,8 @@
-import { VedoClientConfig } from "comelit-client";
-import { VedoAlarm } from "./accessories/vedo-alarm";
-import { Homebridge } from "../types";
+import { VedoClientConfig } from 'comelit-client';
+import { VedoAlarm } from './accessories/vedo-alarm';
+import { Homebridge } from '../types';
 import Timeout = NodeJS.Timeout;
-import { VedoSensor } from "./accessories/vedo-sensor";
+import { VedoSensor } from './accessories/vedo-sensor';
 
 export interface HubConfig {
   alarm_address: string;
@@ -30,7 +30,7 @@ export class ComelitVedoPlatform {
     homebridge: Homebridge
   ) {
     this.log = log;
-    this.log("Initializing platform: ", config);
+    this.log('Initializing platform: ', config);
     this.config = config;
     // Save the API object as plugin needs to register new accessory via this object
     this.homebridge = homebridge;
@@ -39,10 +39,7 @@ export class ComelitVedoPlatform {
 
   async accessories(callback: (array: any[]) => void) {
     if (this.hasValidConfig()) {
-      this.log(
-        `Map VEDO alarm @ ${this.config.alarm_address}:${this.config
-          .alarm_port || 80}`
-      );
+      this.log(`Map VEDO alarm @ ${this.config.alarm_address}:${this.config.alarm_port || 80}`);
       const checkFrequency = this.config.update_interval
         ? this.config.update_interval * 1000
         : 5000;
@@ -58,13 +55,11 @@ export class ComelitVedoPlatform {
       if (this.config.map_sensors) {
         const zones = await alarm.fetchZones();
         this.mappedZones = zones
-          .filter(zone => zone.description !== "")
+          .filter(zone => zone.description !== '')
           .map(zone => new VedoSensor(this.log, zone.description, zone));
       }
 
-      callback(
-        this.config.map_sensors ? [alarm, ...this.mappedZones] : [alarm]
-      );
+      callback(this.config.map_sensors ? [alarm, ...this.mappedZones] : [alarm]);
       this.timeout = setTimeout(async () => {
         const alarmAreas = await alarm.checkAlarm();
         if (alarmAreas) {
@@ -73,7 +68,7 @@ export class ComelitVedoPlatform {
             const zones = await alarm.fetchZones();
             if (zones) {
               zones
-                .filter(zone => zone.description !== "")
+                .filter(zone => zone.description !== '')
                 .forEach((zone, index) => this.mappedZones[index].update(zone));
             }
           }
@@ -82,7 +77,7 @@ export class ComelitVedoPlatform {
       }, checkFrequency);
       return;
     } else {
-      this.log("Invalid configuration ", this.config);
+      this.log('Invalid configuration ', this.config);
     }
     callback([]);
   }

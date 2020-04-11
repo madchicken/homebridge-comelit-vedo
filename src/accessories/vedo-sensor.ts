@@ -1,6 +1,6 @@
-import { VedoClient, ZoneStatus } from "comelit-client";
-import { Categories, Characteristic, Service } from "hap-nodejs";
-import { HomebridgeAPI } from "../index";
+import { VedoClient, ZoneStatus } from 'comelit-client';
+import { Categories, Characteristic, Service } from 'hap-nodejs';
+import { HomebridgeAPI } from '../index';
 
 export class VedoSensor {
   readonly log: Function;
@@ -18,21 +18,15 @@ export class VedoSensor {
   }
 
   getServices(): Service[] {
-    const accessoryInformation = new HomebridgeAPI.hap.Service.AccessoryInformation(
-      null,
-      null
-    );
+    const accessoryInformation = new HomebridgeAPI.hap.Service.AccessoryInformation(null, null);
     accessoryInformation
-      .setCharacteristic(Characteristic.Name, "Vedo Alarm Sensor")
-      .setCharacteristic(Characteristic.Manufacturer, "Comelit")
-      .setCharacteristic(Characteristic.Model, "None")
-      .setCharacteristic(Characteristic.FirmwareRevision, "None")
-      .setCharacteristic(Characteristic.SerialNumber, "None");
+      .setCharacteristic(Characteristic.Name, 'Vedo Alarm Sensor')
+      .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
+      .setCharacteristic(Characteristic.Model, 'None')
+      .setCharacteristic(Characteristic.FirmwareRevision, 'None')
+      .setCharacteristic(Characteristic.SerialNumber, 'None');
 
-    this.sensorService = new HomebridgeAPI.hap.Service.OccupancySensor(
-      this.name,
-      null
-    );
+    this.sensorService = new HomebridgeAPI.hap.Service.OccupancySensor(this.name, null);
     this.update(this.zoneStatus);
 
     return [accessoryInformation, this.sensorService];
