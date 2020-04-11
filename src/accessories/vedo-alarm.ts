@@ -162,11 +162,31 @@ export class VedoAlarm {
   }
 
   async fetchZones(): Promise<ZoneStatus[]> {
-    return await this.withRetry<ZoneStatus[]>(this.client.zoneStatus);
+    try {
+      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
+      if (uid) {
+        this.lastUID = uid;
+        return await this.client.zoneStatus(uid);
+      }
+    } catch (e) {
+      this.lastUID = null;
+      this.log(e.message);
+    }
+    return null;
   }
 
   async checkAlarm(): Promise<AlarmArea[]> {
-    return await this.withRetry<AlarmArea[]>(this.client.findActiveAreas);
+    try {
+      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
+      if (uid) {
+        this.lastUID = uid;
+        return await this.client.findActiveAreas(uid);
+      }
+    } catch (e) {
+      this.lastUID = null;
+      this.log(e.message);
+    }
+    return null;
   }
 
   async withRetry<T>(fn: (uid: string) => Promise<T>): Promise<T> {
@@ -174,7 +194,7 @@ export class VedoAlarm {
       const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
       if (uid) {
         this.lastUID = uid;
-        return await fn.call(this, uid);
+        return await fn(uid);
       }
     } catch (e) {
       this.lastUID = null;
