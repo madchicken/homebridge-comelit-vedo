@@ -45,7 +45,7 @@ export class ComelitVedoPlatform {
       );
       const checkFrequency = this.config.update_interval
         ? this.config.update_interval * 1000
-        : null;
+        : 5000;
       const config = this.config.advanced || {};
       const alarm: VedoAlarm = new VedoAlarm(
         this.log,
