@@ -55,7 +55,7 @@ A possible alternative configuration for Vedo without an IP could be:
     "area_stat": "/user/vedo_area_stat.json",
     "zone_desc": "/user/vedo_zone_desc.json",
     "zone_stat": "/user/vedo_zone_stat.json",
-    "action": "/action.cgi",
+    "action": "/user/action.cgi",
     "code_param": "alm"
   }
 }
