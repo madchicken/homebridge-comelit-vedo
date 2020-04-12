@@ -1,6 +1,6 @@
 {
   "name": "homebridge-comelit-vedo-platform",
-  "version": "1.0.0-rc.8",
+  "version": "1.0.0-rc.9",
   "author": "Pierpaolo Follia",
   "repository": {
     "type": "git",
@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "hap-nodejs": "^0.5.5",
-    "comelit-client": "1.5.2",
+    "comelit-client": "1.5.3",
     "homebridge": "^0.4.53",
     "lodash": "^4.17.15",
     "typescript": "^3.7.4"
