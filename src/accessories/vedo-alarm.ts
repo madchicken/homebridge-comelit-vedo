@@ -11,9 +11,15 @@ import {
   SecuritySystemCurrentState,
   SecuritySystemTargetState,
 } from 'hap-nodejs/dist/lib/gen/HomeKit';
-import Timeout = NodeJS.Timeout;
 
 const DEFAULT_ALARM_CHECK_TIMEOUT = 5000;
+
+const ALL = 32;
+
+export interface VedoAlarmConfig extends Partial<VedoClientConfig> {
+  night_area?: string;
+  home_area?: string;
+}
 
 export class VedoAlarm {
   private readonly code: string;
@@ -24,13 +30,16 @@ export class VedoAlarm {
   private securityService: Service;
   private readonly checkFrequency: number;
   private lastUID: string;
+  private nightAreaId: number = null;
+  private homeAreaId: number = null;
+  readonly config: VedoAlarmConfig;
 
   constructor(
     log: Function,
     address: string,
     port: number,
     code: string,
-    config: Partial<VedoClientConfig>,
+    config: VedoAlarmConfig,
     checkFrequency: number = DEFAULT_ALARM_CHECK_TIMEOUT
   ) {
     this.log = (str: string) => log(`[Vedo Alarm] ${str}`);
@@ -39,6 +48,7 @@ export class VedoAlarm {
     this.category = Categories.SECURITY_SYSTEM;
     this.checkFrequency = checkFrequency;
     this.client = new VedoClient(address, port, config);
+    this.config = config;
   }
 
   getServices(): Service[] {
@@ -91,14 +101,29 @@ export class VedoAlarm {
         try {
           const uid = await this.client.loginWithRetry(this.code);
           if (uid) {
-            if (value === SecuritySystemTargetState.DISARM) {
-              this.log('Disarming system');
-              await this.client.disarm(uid, 32);
-              callback();
-            } else {
-              this.log('Arming system');
-              await this.client.arm(uid, 32);
-              callback();
+            switch (value) {
+              case SecuritySystemTargetState.DISARM:
+                this.log('Disarming system');
+                await this.client.disarm(uid, 32);
+                callback();
+                break;
+              case SecuritySystemTargetState.AWAY_ARM:
+                this.log('Arming system');
+                await this.client.arm(uid, ALL);
+                callback();
+                break;
+              case SecuritySystemTargetState.NIGHT_ARM:
+                this.log('Arming system');
+                await this.client.arm(uid, this.nightAreaId === null ? ALL : this.nightAreaId);
+                callback();
+                break;
+              case SecuritySystemTargetState.STAY_ARM:
+                this.log('Arming system');
+                await this.client.arm(uid, this.homeAreaId === null ? ALL : this.homeAreaId);
+                callback();
+                break;
+              default:
+                callback(new Error('Cannot execute requested action ' + value));
             }
           } else {
             callback(new Error('Cannot login into system'));
@@ -144,7 +169,7 @@ export class VedoAlarm {
 
   async fetchZones(): Promise<ZoneStatus[]> {
     try {
-      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
+      const uid = await this.client.loginWithRetry(this.code);
       if (uid) {
         this.lastUID = uid;
         return await this.client.zoneStatus(uid);
@@ -161,21 +186,24 @@ export class VedoAlarm {
       const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
       if (uid) {
         this.lastUID = uid;
-        return await this.client.findActiveAreas(uid);
-      }
-    } catch (e) {
-      this.lastUID = null;
-      this.log(e.message);
-    }
-    return null;
-  }
-
-  async withRetry<T>(fn: (uid: string) => Promise<T>): Promise<T> {
-    try {
-      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
-      if (uid) {
-        this.lastUID = uid;
-        return await fn(uid);
+        const alarmAreas = await this.client.findActiveAreas(uid);
+        if (this.config.home_area) {
+          this.homeAreaId = alarmAreas.findIndex(
+            (a: AlarmArea) => a.description === this.config.home_area
+          );
+          if (this.homeAreaId === -1) {
+            this.homeAreaId = null;
+          }
+        }
+        if (this.config.night_area) {
+          this.nightAreaId = alarmAreas.findIndex(
+            (a: AlarmArea) => a.description === this.config.home_area
+          );
+          if (this.nightAreaId === -1) {
+            this.nightAreaId = null;
+          }
+        }
+        return alarmAreas;
       }
     } catch (e) {
       this.lastUID = null;

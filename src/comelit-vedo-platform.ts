@@ -1,8 +1,8 @@
 import { VedoClientConfig } from 'comelit-client';
 import { VedoAlarm } from './accessories/vedo-alarm';
 import { Homebridge } from '../types';
-import Timeout = NodeJS.Timeout;
 import { VedoSensor } from './accessories/vedo-sensor';
+import Timeout = NodeJS.Timeout;
 
 export interface HubConfig {
   alarm_address: string;
@@ -10,6 +10,8 @@ export interface HubConfig {
   alarm_code: string;
   map_sensors: boolean;
   update_interval?: number;
+  night_area?: string;
+  home_area?: string;
   advanced?: VedoClientConfig;
 }
 
@@ -43,7 +45,12 @@ export class ComelitVedoPlatform {
       const checkFrequency = this.config.update_interval
         ? this.config.update_interval * 1000
         : 5000;
-      const config = this.config.advanced || {};
+      const advanced: Partial<VedoClientConfig> = this.config.advanced || {};
+      const config = {
+        ...advanced,
+        home_area: this.config.home_area,
+        night_area: this.config.night_area,
+      };
       const alarm: VedoAlarm = new VedoAlarm(
         this.log,
         this.config.alarm_address,

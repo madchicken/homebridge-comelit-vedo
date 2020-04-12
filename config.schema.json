@@ -45,6 +45,16 @@
         "required": false,
         "default": false
       },
+      "home_area": {
+        "title": "Map specific alarm area to 'Home' in HomeKit",
+        "type": "string",
+        "required": false
+      },
+      "night_area": {
+        "title": "Map specific alarm area to 'Night' in HomeKit",
+        "type": "string",
+        "required": false
+      },
       "advanced": {
         "title": "Advanced configuration",
         "type": "object",
