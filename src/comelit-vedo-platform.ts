@@ -69,7 +69,7 @@ export class ComelitVedoPlatform {
             if (zones) {
               zones
                 .filter(zone => zone.description !== '')
-                .forEach((zone, index) =>
+                .forEach(zone =>
                   this.mappedZones.find(z => z.name === zone.description).update(zone)
                 );
             }

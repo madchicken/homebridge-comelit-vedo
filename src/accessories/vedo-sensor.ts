@@ -1,4 +1,4 @@
-import { VedoClient, ZoneStatus } from 'comelit-client';
+import { ZoneStatus } from 'comelit-client';
 import { Categories, Characteristic, Service } from 'hap-nodejs';
 import { HomebridgeAPI } from '../index';
 import { OccupancyDetected } from 'hap-nodejs/dist/lib/gen/HomeKit';
