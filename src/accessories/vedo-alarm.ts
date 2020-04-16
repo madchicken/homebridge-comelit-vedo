@@ -166,13 +166,17 @@ export class VedoAlarm {
     const armedAreas = alarmAreas
       .filter((area: AlarmArea) => area.armed)
       .map(a => a.description.toLowerCase());
-    const status = alarmAreas.length !== 0;
-    this.log(`Alarm status is ${status}`);
+    const status = armedAreas.length !== 0;
+    this.log.debug(`Alarmed areas`, alarmAreas);
     const trigger = alarmAreas.reduce(
-      (triggered: boolean, area: AlarmArea) => triggered || area.triggered,
+      (triggered: boolean, area: AlarmArea) => triggered || area.triggered || area.sabotaged,
       false
     );
-    this.log(`Alarm trigger is ${trigger}`);
+    if (trigger) {
+      this.log(
+        `Alarm triggered in area ${alarmAreas.filter(a => a.triggered || a.sabotaged).join(', ')}`
+      );
+    }
     if (trigger && currentStatus !== SecuritySystemCurrentState.ALARM_TRIGGERED) {
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
