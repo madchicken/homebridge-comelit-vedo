@@ -22,6 +22,13 @@ export declare class PlatformAccessory {
 
   configureCameraSource(cameraSource: any): void;
 }
+export interface Logger {
+  prefix: string;
+  (message?: any, ...optionalParams: any[]): void;
+  warning: (message?: any, ...optionalParams: any[]) => void;
+  debug: (message?: any, ...optionalParams: any[]) => void;
+  error: (message?: any, ...optionalParams: any[]) => void;
+}
 
 export interface Homebridge {
   version: string;

@@ -11,44 +11,42 @@ import {
   SecuritySystemCurrentState,
   SecuritySystemTargetState,
 } from 'hap-nodejs/dist/lib/gen/HomeKit';
-
-const DEFAULT_ALARM_CHECK_TIMEOUT = 5000;
+import { intersection } from 'lodash';
+import { Logger } from '../../types';
 
 const ALL = 32;
 
 export interface VedoAlarmConfig extends Partial<VedoClientConfig> {
-  night_area?: string;
-  home_area?: string;
+  away_areas?: string[];
+  night_areas?: string[];
+  home_areas?: string[];
 }
 
 export class VedoAlarm {
   private readonly code: string;
   readonly client: VedoClient;
-  readonly log: Function;
+  readonly log: Logger;
   readonly name: string;
   readonly category: Categories;
   private securityService: Service;
-  private readonly checkFrequency: number;
   private lastUID: string;
-  private nightAreaId: number = null;
-  private homeAreaId: number = null;
-  readonly config: VedoAlarmConfig;
+  private readonly away_areas: string[];
+  private readonly night_areas: string[];
+  private readonly home_areas: string[];
 
-  constructor(
-    log: Function,
-    address: string,
-    port: number,
-    code: string,
-    config: VedoAlarmConfig,
-    checkFrequency: number = DEFAULT_ALARM_CHECK_TIMEOUT
-  ) {
-    this.log = (str: string) => log(`[Vedo Alarm] ${str}`);
+  constructor(log: Logger, address: string, port: number, code: string, config: VedoAlarmConfig) {
+    this.log = log;
+    this.log.prefix = `[ALARM] ${log.prefix}`;
     this.code = code;
     this.name = 'Vedo Alarm @ ' + address;
     this.category = Categories.SECURITY_SYSTEM;
-    this.checkFrequency = checkFrequency;
     this.client = new VedoClient(address, port, config);
-    this.config = config;
+    this.away_areas = config.away_areas ? config.away_areas.map(a => a.toLowerCase().trim()) : [];
+    this.night_areas = config.night_areas
+      ? config.night_areas.map(a => a.toLowerCase().trim())
+      : [];
+    this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
+    log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
   }
 
   getServices(): Service[] {
@@ -74,10 +72,9 @@ export class VedoAlarm {
         try {
           const uid = await this.client.loginWithRetry(this.code);
           const alarmAreas = await this.client.findActiveAreas(uid);
-          const armed = alarmAreas.reduce(
-            (armed: boolean, area: AlarmArea) => armed || area.armed,
-            false
-          );
+          const armedAreas = alarmAreas
+            .filter(area => area.armed)
+            .map(area => area.description.toLowerCase());
           const trigger = alarmAreas.reduce(
             (armed: boolean, area: AlarmArea) => armed || area.triggered,
             false
@@ -85,10 +82,21 @@ export class VedoAlarm {
           if (trigger) {
             callback(null, SecuritySystemCurrentState.ALARM_TRIGGERED);
           } else {
-            callback(
-              null,
-              armed ? SecuritySystemCurrentState.AWAY_ARM : SecuritySystemCurrentState.DISARMED
-            );
+            if (armedAreas.length) {
+              if (this.night_areas.length) {
+                if (intersection(armedAreas, this.night_areas).length === armedAreas.length) {
+                  callback(null, SecuritySystemCurrentState.NIGHT_ARM);
+                }
+              } else if (this.home_areas.length) {
+                if (intersection(armedAreas, this.home_areas).length === armedAreas.length) {
+                  callback(null, SecuritySystemCurrentState.STAY_ARM);
+                }
+              } else {
+                callback(null, SecuritySystemCurrentState.AWAY_ARM);
+              }
+            } else {
+              callback(null, SecuritySystemCurrentState.DISARMED);
+            }
           }
         } catch (e) {
           callback(e.message);
@@ -104,22 +112,19 @@ export class VedoAlarm {
             switch (value) {
               case SecuritySystemTargetState.DISARM:
                 this.log('Disarming system');
-                await this.client.disarm(uid, 32);
+                await this.client.disarm(uid, ALL);
                 callback();
                 break;
               case SecuritySystemTargetState.AWAY_ARM:
-                this.log('Arming system');
-                await this.client.arm(uid, ALL);
+                await this.armAreas(this.away_areas, uid);
                 callback();
                 break;
               case SecuritySystemTargetState.NIGHT_ARM:
-                this.log('Arming system');
-                await this.client.arm(uid, this.nightAreaId === null ? ALL : this.nightAreaId);
+                await this.armAreas(this.night_areas, uid);
                 callback();
                 break;
               case SecuritySystemTargetState.STAY_ARM:
-                this.log('Arming system');
-                await this.client.arm(uid, this.homeAreaId === null ? ALL : this.homeAreaId);
+                await this.armAreas(this.home_areas, uid);
                 callback();
                 break;
               default:
@@ -136,15 +141,32 @@ export class VedoAlarm {
     return [accessoryInformation, this.securityService];
   }
 
+  private async armAreas(areas: string[], uid: string): Promise<number[]> {
+    this.log(`Arming system: ${areas.length ? areas.join(', ') : 'ALL SYSTEM'}`);
+    const alarmAreas = await this.client.findActiveAreas(uid);
+    if (areas && areas.length) {
+      const indexes = areas
+        .map(area => alarmAreas.findIndex(a => a.description.toLowerCase() === area))
+        .filter(index => index !== -1);
+      if (indexes.length) {
+        const promises = indexes.map(index => this.client.arm(uid, index));
+        await Promise.all(promises);
+        return indexes;
+      }
+    }
+    await this.client.arm(uid, ALL);
+    return [ALL];
+  }
+
   update(alarmAreas: AlarmArea[]) {
     const currentStatus = this.securityService.getCharacteristic(
       Characteristic.SecuritySystemCurrentState
     ).value;
 
-    const status = alarmAreas.reduce(
-      (armed: boolean, area: AlarmArea) => armed || area.armed,
-      false
-    );
+    const armedAreas = alarmAreas
+      .filter((area: AlarmArea) => area.armed)
+      .map(a => a.description.toLowerCase());
+    const status = alarmAreas.length !== 0;
     this.log(`Alarm status is ${status}`);
     const trigger = alarmAreas.reduce(
       (triggered: boolean, area: AlarmArea) => triggered || area.triggered,
@@ -156,9 +178,29 @@ export class VedoAlarm {
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
         .updateValue(SecuritySystemCurrentState.ALARM_TRIGGERED);
     } else {
-      const newStatus = status
-        ? SecuritySystemCurrentState.STAY_ARM
+      let newStatus = status
+        ? SecuritySystemCurrentState.AWAY_ARM
         : SecuritySystemCurrentState.DISARMED;
+
+      if (status) {
+        if (
+          this.away_areas.length &&
+          intersection(armedAreas, this.away_areas).length === armedAreas.length
+        ) {
+          newStatus = SecuritySystemCurrentState.AWAY_ARM;
+        } else if (
+          this.home_areas.length &&
+          intersection(armedAreas, this.home_areas).length === armedAreas.length
+        ) {
+          newStatus = SecuritySystemCurrentState.STAY_ARM;
+        } else if (
+          this.night_areas.length &&
+          intersection(armedAreas, this.night_areas).length === armedAreas.length
+        ) {
+          newStatus = SecuritySystemCurrentState.NIGHT_ARM;
+        }
+      }
+
       if (currentStatus !== newStatus) {
         this.securityService
           .getCharacteristic(Characteristic.SecuritySystemCurrentState)
@@ -181,29 +223,26 @@ export class VedoAlarm {
     return null;
   }
 
+  async fetchAreas(): Promise<AlarmArea[]> {
+    try {
+      const uid = await this.client.loginWithRetry(this.code);
+      if (uid) {
+        this.lastUID = uid;
+        return await this.client.findActiveAreas(uid);
+      }
+    } catch (e) {
+      this.lastUID = null;
+      this.log(e.message);
+    }
+    return null;
+  }
+
   async checkAlarm(): Promise<AlarmArea[]> {
     try {
       const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
       if (uid) {
         this.lastUID = uid;
-        const alarmAreas = await this.client.findActiveAreas(uid);
-        if (this.config.home_area) {
-          this.homeAreaId = alarmAreas.findIndex(
-            (a: AlarmArea) => a.description === this.config.home_area
-          );
-          if (this.homeAreaId === -1) {
-            this.homeAreaId = null;
-          }
-        }
-        if (this.config.night_area) {
-          this.nightAreaId = alarmAreas.findIndex(
-            (a: AlarmArea) => a.description === this.config.home_area
-          );
-          if (this.nightAreaId === -1) {
-            this.nightAreaId = null;
-          }
-        }
-        return alarmAreas;
+        return await this.client.findActiveAreas(uid);
       }
     } catch (e) {
       this.lastUID = null;

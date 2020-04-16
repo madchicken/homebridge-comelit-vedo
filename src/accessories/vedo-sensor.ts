@@ -7,7 +7,7 @@ export class VedoSensor {
   readonly log: Function;
   readonly name: string;
   readonly category: Categories;
-  private zoneStatus: ZoneStatus;
+  private readonly zoneStatus: ZoneStatus;
   private sensorService: Service;
 
   constructor(log: Function, name: string, zoneStatus: ZoneStatus) {

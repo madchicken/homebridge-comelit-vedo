@@ -6,7 +6,6 @@
   "singular": false,
   "schema": {
     "type": "object",
-    "title": "Vedo alarm configuration",
     "properties": {
       "name": {
         "title": "Alarm name",
@@ -29,7 +28,11 @@
       "alarm_code": {
         "title": "Secret code for VEDO alarm",
         "type": "string",
-        "required": true
+        "required": true,
+        "x-schema-form": {
+          "type": "password",
+          "placeholder": "111111"
+        }
       },
       "update_interval": {
         "title": "Update timeout",
@@ -45,18 +48,38 @@
         "required": false,
         "default": false
       },
-      "home_area": {
-        "title": "Map specific alarm area to 'Home' in HomeKit",
-        "type": "string",
-        "required": false
-      },
-      "night_area": {
-        "title": "Map specific alarm area to 'Night' in HomeKit",
-        "type": "string",
-        "required": false
+      "area_mapping": {
+        "title": "Alarm Areas Setup",
+        "type": "object",
+        "properties": {
+          "away_areas": {
+            "title": "Away area",
+            "type": "array",
+            "items": {
+              "title": "Area name",
+              "type": "string"
+            }
+          },
+          "home_areas": {
+            "title": "Home area",
+            "type": "array",
+            "items": {
+              "title": "Area name",
+              "type": "string"
+            }
+          },
+          "night_areas": {
+            "title": "Night area",
+            "type": "array",
+            "items": {
+              "title": "Area name",
+              "type": "string"
+            }
+          }
+        }
       },
       "advanced": {
-        "title": "Advanced configuration",
+        "Title": "Advanced URL configuration",
         "type": "object",
         "properties": {
           "login": {
@@ -110,5 +133,126 @@
         }
       }
     }
-  }
+  },
+  "layout": [
+    {
+      "type": "fieldset",
+      "expandable": false,
+      "title": "Main settings",
+      "items": [
+        "name",
+        "alarm_address",
+        "alarm_port",
+        "alarm_code",
+        "update_interval",
+        "map_sensors"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "Advanced URL settings",
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "<h6>Client URLs Mapping</h6><em class='primary-text'>Arbitrary modify URLs settings based on your installation type</em>"
+        },
+        "advanced.login",
+        "advanced.login_info",
+        "advanced.area_desc",
+        "advanced.area_stat",
+        "advanced.zone_desc",
+        "advanced.zone_stat",
+        "advanced.action",
+        "advanced.code_param"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "expandable": true,
+      "expanded": false,
+      "title": "Advanced Area settings",
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "<h6>Away Area Mapping</h6><em class='primary-text'>Enter the area names that will be activated when selecting 'Away' from the Home App.</em>"
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.away_areas",
+          "type": "array",
+          "orderable": false,
+          "items": [
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "items": [
+                {
+                  "key": "area_mapping.away_areas[]",
+                  "flex": "1 1 50px",
+                  "notitle": true,
+                  "placeholder": "Enter area name..."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "help",
+          "helpvalue": "<h6>Night Area Mapping</h6><em class='primary-text'>Enter the area names that will be activated when selecting 'Night' from the Home App.</em>"
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.night_areas",
+          "type": "array",
+          "orderable": false,
+          "items": [
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "items": [
+                {
+                  "key": "area_mapping.night_areas[]",
+                  "flex": "1 1 50px",
+                  "notitle": true,
+                  "placeholder": "Enter area name..."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "help",
+          "helpvalue": "<h6>Home Area Mapping</h6><em class='primary-text'>Enter the area names that will be activated when selecting 'Home' from the Home App.</em>"
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.home_areas",
+          "type": "array",
+          "orderable": false,
+          "items": [
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "items": [
+                {
+                  "key": "area_mapping.home_areas[]",
+                  "flex": "1 1 50px",
+                  "notitle": true,
+                  "placeholder": "Enter area name..."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
