@@ -1,6 +1,6 @@
 {
   "name": "homebridge-comelit-vedo-platform",
-  "version": "1.0.0-rc.14",
+  "version": "1.0.0-rc.15",
   "author": "Pierpaolo Follia",
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   "main": "dist/index.js",
   "files": [
     "dist",
+    "src",
     "config.schema.json"
   ],
   "scripts": {

@@ -205,11 +205,9 @@ export class VedoAlarm {
         }
       }
 
-      if (currentStatus !== newStatus) {
-        this.securityService
-          .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-          .updateValue(newStatus);
-      }
+      this.securityService
+        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+        .updateValue(newStatus);
     }
   }
 

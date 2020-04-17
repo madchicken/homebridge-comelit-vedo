@@ -49,19 +49,23 @@ export class ComelitVedoPlatform {
       : DEFAULT_ALARM_CHECK_TIMEOUT;
     this.log(`Setting up polling timeout every ${checkFrequency}ms`);
     this.timeout = setTimeout(async () => {
-      const alarmAreas = await this.alarm.checkAlarm();
-      if (alarmAreas) {
-        this.alarm.update(alarmAreas);
-        if (this.config.map_sensors) {
-          const zones = await this.alarm.fetchZones();
-          if (zones) {
-            zones
-              .filter(zone => zone.description !== '')
-              .forEach(zone =>
-                this.mappedZones.find(z => z.name === zone.description).update(zone)
-              );
+      try {
+        const alarmAreas = await this.alarm.checkAlarm();
+        if (alarmAreas) {
+          this.alarm.update(alarmAreas);
+          if (this.config.map_sensors) {
+            const zones = await this.alarm.fetchZones();
+            if (zones) {
+              zones
+                .filter(zone => zone.description !== '')
+                .forEach(zone =>
+                  this.mappedZones.find(z => z.name === zone.description).update(zone)
+                );
+            }
           }
         }
+      } catch (e) {
+        this.log.error(e.message, e);
       }
       this.timeout.refresh();
     }, checkFrequency);
@@ -91,10 +95,11 @@ export class ComelitVedoPlatform {
           this.mappedZones = zones
             .filter(zone => zone.description !== '')
             .map(zone => new VedoSensor(this.log, zone.description, zone));
+          callback([this.alarm, ...this.mappedZones]);
         }
+      } else {
+        callback([this.alarm]);
       }
-
-      callback(this.config.map_sensors ? [this.alarm, ...this.mappedZones] : [this.alarm]);
     } else {
       this.log.error('Invalid configuration ', this.config);
       callback([]);
