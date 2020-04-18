@@ -213,7 +213,7 @@ export class VedoAlarm {
 
   async fetchZones(): Promise<ZoneStatus[]> {
     try {
-      const uid = await this.client.loginWithRetry(this.code);
+      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
       if (uid) {
         this.lastUID = uid;
         return await this.client.zoneStatus(uid);
@@ -227,7 +227,7 @@ export class VedoAlarm {
 
   async fetchAreas(): Promise<AlarmArea[]> {
     try {
-      const uid = await this.client.loginWithRetry(this.code);
+      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
       if (uid) {
         this.lastUID = uid;
         return await this.client.findActiveAreas(uid);
