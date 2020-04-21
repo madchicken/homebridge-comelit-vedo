@@ -47,15 +47,24 @@ export class ComelitVedoPlatform {
     const checkFrequency = this.config.update_interval
       ? this.config.update_interval * 1000
       : DEFAULT_ALARM_CHECK_TIMEOUT;
-    this.log(`Setting up polling timeout every ${checkFrequency}ms`);
+    this.log(`Setting up polling timeout every ${checkFrequency / 1000} secs`);
     this.timeout = setTimeout(async () => {
       try {
         const alarmAreas = await this.alarm.checkAlarm();
         if (alarmAreas) {
+          this.log.debug(
+            `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
+          );
           this.alarm.update(alarmAreas);
           if (this.config.map_sensors) {
             const zones = await this.alarm.fetchZones();
             if (zones) {
+              this.log.debug(
+                `Found ${zones.length} areas: ${zones
+                  .filter(zone => zone.description !== '')
+                  .map(a => a.description)
+                  .join(', ')}`
+              );
               zones
                 .filter(zone => zone.description !== '')
                 .forEach(zone =>

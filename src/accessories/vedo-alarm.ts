@@ -220,21 +220,7 @@ export class VedoAlarm {
       }
     } catch (e) {
       this.lastUID = null;
-      this.log(e.message);
-    }
-    return null;
-  }
-
-  async fetchAreas(): Promise<AlarmArea[]> {
-    try {
-      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
-      if (uid) {
-        this.lastUID = uid;
-        return await this.client.findActiveAreas(uid);
-      }
-    } catch (e) {
-      this.lastUID = null;
-      this.log(e.message);
+      this.log.error(e.message);
     }
     return null;
   }
@@ -248,7 +234,7 @@ export class VedoAlarm {
       }
     } catch (e) {
       this.lastUID = null;
-      this.log(e.message);
+      this.log.error(e.message);
     }
     return null;
   }

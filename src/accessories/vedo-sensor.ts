@@ -33,13 +33,10 @@ export class VedoSensor {
   }
 
   update(zoneStatus: ZoneStatus) {
-    const value = this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).value;
     const newValue = zoneStatus.open
       ? OccupancyDetected.OCCUPANCY_DETECTED
       : OccupancyDetected.OCCUPANCY_NOT_DETECTED;
-    if (value !== newValue) {
-      this.log(`Updating occupancy: ${zoneStatus.open}`);
-      this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
-    }
+    this.log(`Updating occupancy: ${zoneStatus.open}`);
+    this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
   }
 }
