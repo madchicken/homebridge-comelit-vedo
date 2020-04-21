@@ -70,6 +70,8 @@ export class ComelitVedoPlatform {
                 .forEach(zone =>
                   this.mappedZones.find(z => z.name === zone.description).update(zone)
                 );
+            } else {
+              this.log.warn(`No zone found`);
             }
           }
         }

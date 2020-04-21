@@ -30,6 +30,7 @@ export class VedoAlarm {
   readonly category: Categories;
   private securityService: Service;
   private lastUID: string;
+  private lastLogin: number;
   private readonly away_areas: string[];
   private readonly night_areas: string[];
   private readonly home_areas: string[];
@@ -46,6 +47,7 @@ export class VedoAlarm {
       ? config.night_areas.map(a => a.toLowerCase().trim())
       : [];
     this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
+    this.lastLogin = 0;
     log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
   }
 
@@ -213,29 +215,48 @@ export class VedoAlarm {
 
   async fetchZones(): Promise<ZoneStatus[]> {
     try {
-      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
-      if (uid) {
-        this.lastUID = uid;
-        return await this.client.zoneStatus(uid);
+      if (!this.lastUID || this.getTimeElapsedFromLastLogin() > 10000) {
+        if (this.lastUID) {
+          await this.client.logout(this.lastUID);
+        }
+        this.lastUID = null;
+        this.lastUID = await this.client.loginWithRetry(this.code);
+        this.lastLogin = new Date().getTime();
       }
+      return await this.client.zoneStatus(this.lastUID);
     } catch (e) {
       this.log.error(e.message);
     }
+    this.log.error('Unable to fetch token');
     this.lastUID = null;
     return null;
   }
 
   async checkAlarm(): Promise<AlarmArea[]> {
     try {
-      const uid = this.lastUID || (await this.client.loginWithRetry(this.code));
-      if (uid) {
-        this.lastUID = uid;
-        return await this.client.findActiveAreas(uid);
+      if (this.shouldLogin()) {
+        if (this.lastUID) {
+          await this.client.logout(this.lastUID);
+        }
+        this.lastUID = null;
+        this.lastUID = await this.client.loginWithRetry(this.code);
+        this.lastLogin = new Date().getTime();
       }
+      return await this.client.findActiveAreas(this.lastUID);
     } catch (e) {
       this.log.error(e.message);
     }
+    this.log.error('Unable to fetch token');
     this.lastUID = null;
     return null;
+  }
+
+  private shouldLogin() {
+    return !this.lastUID || this.getTimeElapsedFromLastLogin() > 10000;
+  }
+
+  private getTimeElapsedFromLastLogin() {
+    const now = new Date().getTime();
+    return now - this.lastLogin;
   }
 }
