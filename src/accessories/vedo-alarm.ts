@@ -219,9 +219,9 @@ export class VedoAlarm {
         return await this.client.zoneStatus(uid);
       }
     } catch (e) {
-      this.lastUID = null;
       this.log.error(e.message);
     }
+    this.lastUID = null;
     return null;
   }
 
@@ -233,9 +233,9 @@ export class VedoAlarm {
         return await this.client.findActiveAreas(uid);
       }
     } catch (e) {
-      this.lastUID = null;
       this.log.error(e.message);
     }
+    this.lastUID = null;
     return null;
   }
 }
