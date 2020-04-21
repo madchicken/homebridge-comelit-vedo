@@ -1125,10 +1125,10 @@ combined-stream@^1.0.6, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-comelit-client@1.5.4:
-  version "1.5.4"
-  resolved "https://registry.yarnpkg.com/comelit-client/-/comelit-client-1.5.4.tgz#d2990def1af4412bea11c877573bdcf963327260"
-  integrity sha512-Bawm23tnGLc5TF3SHxGugmnu47hFbChaAhaJsD5GM9IXolRGI4srAgDyyAGot6Jl1eoeAy8vkeLJEBpP/5Znhg==
+comelit-client@1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/comelit-client/-/comelit-client-1.6.0.tgz#9b89b1786034d711e9b097a67117415fa5d4745b"
+  integrity sha512-zSdnHZIGk1QT4KOVPf97uW3rQjUH8xfNFz/WnUFcEnqmLaLFOv6+3ntxhT/j16HIBa2XL7oit2+XZNqJVqW/BA==
   dependencies:
     "@sentry/node" "5.12.2"
     async-mqtt "^2.4.2"
@@ -4097,6 +4097,13 @@ rimraf@^2.5.4, rimraf@^2.6.3:
   version "2.7.1"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.7.1.tgz#35797f13a7fdadc566142c29d4f07ccad483e3ec"
   integrity sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==
+  dependencies:
+    glob "^7.1.3"
+
+rimraf@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-3.0.2.tgz#f1a5402ba6220ad52cc1282bac1ae3aa49fd061a"
+  integrity sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==
   dependencies:
     glob "^7.1.3"
 
