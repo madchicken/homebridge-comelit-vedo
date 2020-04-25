@@ -3,6 +3,9 @@ import { VedoAlarm, VedoAlarmConfig } from './accessories/vedo-alarm';
 import { Homebridge, Logger } from '../types';
 import { VedoSensor } from './accessories/vedo-sensor';
 import Timeout = NodeJS.Timeout;
+import express, { Express } from 'express';
+import client, { register } from 'prom-client';
+import * as http from 'http';
 
 export interface PlatformConfig {
   alarm_address: string;
@@ -10,6 +13,8 @@ export interface PlatformConfig {
   alarm_code: string;
   map_sensors: boolean;
   update_interval?: number;
+  export_prometheus_metrics?: boolean;
+  exporter_http_port?: number;
   area_mapping: {
     away_areas?: string[];
     night_areas?: string[];
@@ -17,6 +22,18 @@ export interface PlatformConfig {
   };
   advanced?: VedoClientConfig;
 }
+
+const polling = new client.Gauge({
+  name: 'comelit_vedo_polling',
+  help: 'Comelit client polling beat',
+});
+
+const DEFAULT_HTTP_PORT = 3003;
+const expr: Express = express();
+expr.get('/metrics', (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(register.metrics());
+});
 
 const DEFAULT_ALARM_CHECK_TIMEOUT = 5000;
 
@@ -33,6 +50,8 @@ export class ComelitVedoPlatform {
 
   private alarm: VedoAlarm;
 
+  private server: http.Server;
+
   constructor(log: Logger, config: PlatformConfig, homebridge: Homebridge) {
     this.log = log;
     this.log('Initializing platform: ', { ...config, alarm_code: '******' });
@@ -44,6 +63,10 @@ export class ComelitVedoPlatform {
   }
 
   private startPolling() {
+    if (!this.server && this.config.export_prometheus_metrics) {
+      this.server = expr.listen(this.config.exporter_http_port || DEFAULT_HTTP_PORT);
+    }
+
     const checkFrequency = this.config.update_interval
       ? this.config.update_interval * 1000
       : DEFAULT_ALARM_CHECK_TIMEOUT;
@@ -78,6 +101,7 @@ export class ComelitVedoPlatform {
       } catch (e) {
         this.log.error(e.message, e);
       }
+      polling.set(1);
       this.timeout.refresh();
     }, checkFrequency);
   }
