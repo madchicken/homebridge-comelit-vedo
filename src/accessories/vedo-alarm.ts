@@ -22,6 +22,8 @@ export interface VedoAlarmConfig extends Partial<VedoClientConfig> {
   home_areas?: string[];
 }
 
+const DEFAULT_LOGIN_TIMEOUT = 10000;
+
 export class VedoAlarm {
   private readonly code: string;
   readonly client: VedoClient;
@@ -215,7 +217,7 @@ export class VedoAlarm {
 
   async fetchZones(): Promise<ZoneStatus[]> {
     try {
-      if (!this.lastUID || this.getTimeElapsedFromLastLogin() > 10000) {
+      if (!this.lastUID || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT) {
         if (this.lastUID) {
           await this.client.logout(this.lastUID);
         }
@@ -252,7 +254,7 @@ export class VedoAlarm {
   }
 
   private shouldLogin() {
-    return !this.lastUID || this.getTimeElapsedFromLastLogin() > 10000;
+    return !this.lastUID || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT;
   }
 
   private getTimeElapsedFromLastLogin() {
