@@ -82,7 +82,7 @@ export class ComelitVedoPlatform {
           if (this.config.map_sensors) {
             const zones = await this.alarm.fetchZones();
             if (zones) {
-              this.log.debug(
+              this.log(
                 `Found ${zones.length} areas: ${zones
                   .filter(zone => zone.description !== '')
                   .map(a => a.description)
@@ -97,10 +97,13 @@ export class ComelitVedoPlatform {
               this.log.warn(`No zone found`);
             }
           }
+        } else {
+          this.log.warn(`No area found`);
         }
       } catch (e) {
         this.log.error(e.message, e);
       }
+      this.log('Reset polling');
       polling.set(1);
       this.timeout.refresh();
     }, checkFrequency);
