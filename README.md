@@ -67,4 +67,5 @@ A possible alternative configuration for Vedo without an IP could be:
 
 ## Screenshots
 
-![Home application screenshot](https://github.com/madchicken/homebridge-comelit-vedo/raw/master/images/vedo.png)
+![Home application screenshot - Alarm](https://github.com/madchicken/homebridge-comelit-vedo/raw/master/images/vedo.png)
+![Home application screenshot - Sensor](https://github.com/madchicken/homebridge-comelit-vedo/raw/master/images/sensor.png)
