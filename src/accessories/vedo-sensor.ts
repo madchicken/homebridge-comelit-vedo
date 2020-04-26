@@ -47,6 +47,7 @@ export class VedoSensor {
     this.log(`Updating occupancy: ${zoneStatus.open}`);
     if (currentValue !== newValue) {
       if (newValue === OccupancyDetected.OCCUPANCY_DETECTED) {
+        this.log(`Occupancy detected for sensor ${this.name}`);
         triggers_count.inc();
       }
       this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);

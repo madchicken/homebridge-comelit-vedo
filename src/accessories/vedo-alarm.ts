@@ -53,6 +53,7 @@ export class VedoAlarm {
     this.name = 'Vedo Alarm @ ' + address;
     this.category = Categories.SECURITY_SYSTEM;
     this.client = new VedoClient(address, port, config);
+    this.client.setLogger(log);
     this.away_areas = config.away_areas ? config.away_areas.map(a => a.toLowerCase().trim()) : [];
     this.night_areas = config.night_areas
       ? config.night_areas.map(a => a.toLowerCase().trim())

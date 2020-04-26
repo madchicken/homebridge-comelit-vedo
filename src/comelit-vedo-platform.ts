@@ -58,8 +58,8 @@ export class ComelitVedoPlatform {
     this.config = config;
     // Save the API object as plugin needs to register new accessory via this object
     this.homebridge = homebridge;
-    this.log(`homebridge API version: ${homebridge.version}`);
-    this.homebridge.on('didFinishLaunching', () => this.startPolling());
+    this.log(`Homebridge API version: ${homebridge.version}`);
+    this.homebridge.on('didFinishLaunching', () => setTimeout(this.startPolling.bind(this), 5000));
   }
 
   private startPolling() {
@@ -73,37 +73,39 @@ export class ComelitVedoPlatform {
     this.log(`Setting up polling timeout every ${checkFrequency / 1000} secs`);
     this.timeout = setTimeout(async () => {
       try {
-        const alarmAreas = await this.alarm.checkAlarm();
-        if (alarmAreas) {
-          this.log.debug(
-            `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
-          );
-          this.alarm.update(alarmAreas);
-          if (this.config.map_sensors) {
-            const zones = await this.alarm.fetchZones();
-            if (zones) {
-              this.log(
-                `Found ${zones.length} areas: ${zones
-                  .filter(zone => zone.description !== '')
-                  .map(a => a.description)
-                  .join(', ')}`
-              );
-              zones
-                .filter(zone => zone.description !== '')
-                .forEach(zone =>
-                  this.mappedZones.find(z => z.name === zone.description).update(zone)
+        if (this.alarm) {
+          const alarmAreas = await this.alarm.checkAlarm();
+          if (alarmAreas) {
+            this.log.debug(
+              `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
+            );
+            this.alarm.update(alarmAreas);
+            if (this.config.map_sensors) {
+              const zones = await this.alarm.fetchZones();
+              if (zones) {
+                this.log.debug(
+                  `Found ${zones.length} areas: ${zones
+                    .filter(zone => zone.description !== '')
+                    .map(a => a.description)
+                    .join(', ')}`
                 );
-            } else {
-              this.log.warn(`No zone found`);
+                zones
+                  .filter(zone => zone.description !== '')
+                  .forEach(zone =>
+                    this.mappedZones.find(z => z.name === zone.description).update(zone)
+                  );
+              } else {
+                this.log.warn(`No zone found`);
+              }
             }
+          } else {
+            this.log.warn(`No area found`);
           }
-        } else {
-          this.log.warn(`No area found`);
         }
       } catch (e) {
         this.log.error(e.message, e);
       }
-      this.log('Reset polling');
+      this.log.debug('Reset polling');
       polling.set(1);
       this.timeout.refresh();
     }, checkFrequency);
