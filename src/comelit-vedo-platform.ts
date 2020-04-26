@@ -2,10 +2,10 @@ import { VedoClientConfig } from 'comelit-client';
 import { VedoAlarm, VedoAlarmConfig } from './accessories/vedo-alarm';
 import { Homebridge, Logger } from '../types';
 import { VedoSensor } from './accessories/vedo-sensor';
-import Timeout = NodeJS.Timeout;
 import express, { Express } from 'express';
 import client, { register } from 'prom-client';
 import * as http from 'http';
+import Timeout = NodeJS.Timeout;
 
 export interface PlatformConfig {
   alarm_address: string;
@@ -44,7 +44,9 @@ export class ComelitVedoPlatform {
 
   private readonly config: PlatformConfig;
 
-  private timeout: Timeout;
+  private timeoutAlarm: Timeout;
+
+  private timeoutSensors: Timeout;
 
   private mappedZones: VedoSensor[];
 
@@ -71,35 +73,18 @@ export class ComelitVedoPlatform {
       ? this.config.update_interval * 1000
       : DEFAULT_ALARM_CHECK_TIMEOUT;
     this.log(`Setting up polling timeout every ${checkFrequency / 1000} secs`);
-    this.timeout = setTimeout(async () => {
+    this.timeoutAlarm = setTimeout(async () => {
       try {
         if (this.alarm) {
+          this.log('Check alarm status');
           const alarmAreas = await this.alarm.checkAlarm();
           if (alarmAreas) {
             this.log.debug(
               `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
             );
             this.alarm.update(alarmAreas);
-            if (this.config.map_sensors) {
-              const zones = await this.alarm.fetchZones();
-              if (zones) {
-                this.log.debug(
-                  `Found ${zones.length} areas: ${zones
-                    .filter(zone => zone.description !== '')
-                    .map(a => a.description)
-                    .join(', ')}`
-                );
-                zones
-                  .filter(zone => zone.description !== '')
-                  .forEach(zone =>
-                    this.mappedZones.find(z => z.name === zone.description).update(zone)
-                  );
-              } else {
-                this.log.warn(`No zone found`);
-              }
-            }
           } else {
-            this.log.warn(`No area found`);
+            this.log.warn('No area found');
           }
         }
       } catch (e) {
@@ -107,9 +92,38 @@ export class ComelitVedoPlatform {
       } finally {
         polling.set(1);
         this.log.debug('Reset polling');
-        this.timeout.refresh();
+        this.timeoutAlarm.refresh();
       }
     }, checkFrequency);
+
+    if (this.config.map_sensors) {
+      this.timeoutSensors = setTimeout(async () => {
+        try {
+          if (this.alarm) {
+            this.log('Check sensors status');
+            const zones = await this.alarm.fetchZones();
+            if (zones) {
+              this.log.debug(
+                `Found ${zones.length} areas: ${zones.map(a => a.description).join(', ')}`
+              );
+              zones.forEach(zone =>
+                this.mappedZones.find(z => z.name === zone.description).update(zone)
+              );
+            } else {
+              this.log.warn('No zones found');
+            }
+          } else {
+            this.log.warn('No areas found');
+          }
+        } catch (e) {
+          this.log.error(`Polling error: ${e.message}`, e);
+        } finally {
+          polling.set(1);
+          this.log.debug('Reset polling');
+          this.timeoutSensors.refresh();
+        }
+      }, checkFrequency);
+    }
   }
 
   async accessories(callback: (array: any[]) => void) {
