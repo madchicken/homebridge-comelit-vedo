@@ -133,9 +133,7 @@ export class ComelitVedoPlatform {
       if (this.config.map_sensors) {
         const zones = await this.alarm.fetchZones();
         if (zones && zones.length) {
-          this.mappedZones = zones
-            .filter(zone => zone.description !== '')
-            .map(zone => new VedoSensor(this.log, zone.description, zone));
+          this.mappedZones = zones.map(zone => new VedoSensor(this.log, zone.description, zone));
           callback([this.alarm, ...this.mappedZones]);
         }
       } else {
