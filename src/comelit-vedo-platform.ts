@@ -103,11 +103,12 @@ export class ComelitVedoPlatform {
           }
         }
       } catch (e) {
-        this.log.error(e.message, e);
+        this.log.error(`Polling error: ${e.message}`, e);
+      } finally {
+        polling.set(1);
+        this.log.debug('Reset polling');
+        this.timeout.refresh();
       }
-      this.log.debug('Reset polling');
-      polling.set(1);
-      this.timeout.refresh();
     }, checkFrequency);
   }
 
