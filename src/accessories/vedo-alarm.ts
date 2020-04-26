@@ -6,7 +6,14 @@ import {
   Service,
 } from 'hap-nodejs';
 import { HomebridgeAPI } from '../index';
-import { AlarmArea, VedoClient, VedoClientConfig, ZoneDesc, ZoneStatus } from 'comelit-client';
+import {
+  AlarmArea,
+  AreaDesc,
+  VedoClient,
+  VedoClientConfig,
+  ZoneDesc,
+  ZoneStatus,
+} from 'comelit-client';
 import {
   SecuritySystemCurrentState,
   SecuritySystemTargetState,
@@ -37,6 +44,7 @@ export class VedoAlarm {
   private readonly night_areas: string[];
   private readonly home_areas: string[];
   private zones: ZoneDesc;
+  private areas: AreaDesc;
 
   constructor(log: Logger, address: string, port: number, code: string, config: VedoAlarmConfig) {
     this.log = log;
@@ -249,7 +257,11 @@ export class VedoAlarm {
         this.lastUID = await this.client.loginWithRetry(this.code);
         this.lastLogin = new Date().getTime();
       }
-      return await this.client.findActiveAreas(this.lastUID);
+      if (!this.areas) {
+        this.areas = await this.client.areaDesc(this.lastUID);
+      }
+
+      return await this.client.findActiveAreas(this.lastUID, this.areas);
     } catch (e) {
       this.log.error(e.message);
     }
