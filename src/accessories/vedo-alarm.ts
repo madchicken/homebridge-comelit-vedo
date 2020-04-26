@@ -29,7 +29,7 @@ export interface VedoAlarmConfig extends Partial<VedoClientConfig> {
   home_areas?: string[];
 }
 
-const DEFAULT_LOGIN_TIMEOUT = 10000;
+const DEFAULT_LOGIN_TIMEOUT = 15000;
 
 export class VedoAlarm {
   private readonly code: string;
@@ -129,19 +129,22 @@ export class VedoAlarm {
                 callback();
                 break;
               case SecuritySystemTargetState.AWAY_ARM:
+                this.log('Arm system: AWAY');
                 await this.armAreas(this.away_areas, uid);
                 callback();
                 break;
               case SecuritySystemTargetState.NIGHT_ARM:
+                this.log('Arm system: NIGHT');
                 await this.armAreas(this.night_areas, uid);
                 callback();
                 break;
               case SecuritySystemTargetState.STAY_ARM:
+                this.log('Arm system: STAY');
                 await this.armAreas(this.home_areas, uid);
                 callback();
                 break;
               default:
-                callback(new Error('Cannot execute requested action ' + value));
+                callback(new Error(`Cannot execute requested action ${value}`));
             }
           } else {
             callback(new Error('Cannot login into system'));
@@ -240,7 +243,7 @@ export class VedoAlarm {
 
       return await this.client.zoneStatus(this.lastUID, this.zones);
     } catch (e) {
-      this.log.error(e.message);
+      this.log.error(`Error fetching zones: ${e.message}`);
     }
     this.log.error('Unable to fetch token');
     this.lastUID = null;
@@ -263,7 +266,7 @@ export class VedoAlarm {
 
       return await this.client.findActiveAreas(this.lastUID, this.areas);
     } catch (e) {
-      this.log.error(e.message);
+      this.log.error(`Error checking alarm: ${e.message}`);
     }
     this.log.error('Unable to fetch token');
     this.lastUID = null;

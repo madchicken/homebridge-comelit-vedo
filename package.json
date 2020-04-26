@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "hap-nodejs": "^0.5.5",
-    "comelit-client": "1.6.4",
+    "comelit-client": "1.6.5",
     "express": "^4.17.1",
     "homebridge": "^0.4.53",
     "lodash": "^4.17.15",
