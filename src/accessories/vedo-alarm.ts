@@ -48,7 +48,6 @@ export class VedoAlarm {
 
   constructor(log: Logger, address: string, port: number, code: string, config: VedoAlarmConfig) {
     this.log = log;
-    this.log.prefix = `[ALARM] ${log.prefix}`;
     this.code = code;
     this.name = 'Vedo Alarm @ ' + address;
     this.category = Categories.SECURITY_SYSTEM;

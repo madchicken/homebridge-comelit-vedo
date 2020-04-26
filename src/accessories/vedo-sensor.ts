@@ -3,6 +3,7 @@ import { Categories, Characteristic, Service } from 'hap-nodejs';
 import { HomebridgeAPI } from '../index';
 import { OccupancyDetected } from 'hap-nodejs/dist/lib/gen/HomeKit';
 import client from 'prom-client';
+import { Logger } from '../../types';
 
 const triggers_count = new client.Counter({
   name: 'comelit_vedo_sensor_triggers',
@@ -10,14 +11,14 @@ const triggers_count = new client.Counter({
 });
 
 export class VedoSensor {
-  readonly log: Function;
+  readonly log: Logger;
   readonly name: string;
   readonly category: Categories;
   private readonly zoneStatus: ZoneStatus;
   private sensorService: Service;
 
-  constructor(log: Function, name: string, zoneStatus: ZoneStatus) {
-    this.log = (str: string) => log(`[Sensor ${name}] ${str}`);
+  constructor(log: Logger, name: string, zoneStatus: ZoneStatus) {
+    this.log = log;
     this.name = name;
     this.category = Categories.SENSOR;
     this.zoneStatus = zoneStatus;
@@ -44,7 +45,6 @@ export class VedoSensor {
     const newValue = zoneStatus.open
       ? OccupancyDetected.OCCUPANCY_DETECTED
       : OccupancyDetected.OCCUPANCY_NOT_DETECTED;
-    this.log(`Updating occupancy: ${zoneStatus.open}`);
     if (currentValue !== newValue) {
       if (newValue === OccupancyDetected.OCCUPANCY_DETECTED) {
         this.log(`Occupancy detected for sensor ${this.name}`);
