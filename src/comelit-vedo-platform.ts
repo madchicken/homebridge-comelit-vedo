@@ -49,6 +49,8 @@ export class ComelitVedoPlatform {
 
   private timeoutSensors: Timeout;
 
+  private timeoutSentinel: Timeout;
+
   private mappedZones: VedoSensor[];
 
   private alarm: VedoAlarm;
@@ -77,6 +79,7 @@ export class ComelitVedoPlatform {
     this.log(`Setting up polling timeout every ${checkFrequency / 1000} secs`);
     this.pollAlarm();
     this.pollSensors();
+    this.timeoutSentinel = setTimeout(this.sentinel.bind(this), 1000);
   }
 
   private getCheckFrequency() {
@@ -87,17 +90,24 @@ export class ComelitVedoPlatform {
 
   private sentinel() {
     const now = Date.now();
-    if (this.lastAlarmCheck - now > 5 * this.getCheckFrequency()) {
-      this.log.warn('Alarm check seems to be stuck. Restart polling');
-      clearTimeout(this.lastAlarmCheck);
-      this.pollAlarm();
+    if (this.timeoutAlarm) {
+      if (this.lastAlarmCheck - now > 5 * this.getCheckFrequency()) {
+        this.log.warn('Alarm check seems to be stuck. Restart polling');
+        clearTimeout(this.lastAlarmCheck);
+        this.lastAlarmCheck = null;
+        this.pollAlarm();
+      }
     }
 
-    if (this.lastSensorsCheck - now > 5 * this.getCheckFrequency()) {
-      this.log.warn('Sensors check seems to be stuck. Restart polling');
-      clearTimeout(this.lastSensorsCheck);
-      this.pollSensors();
+    if (this.timeoutSensors) {
+      if (this.lastSensorsCheck - now > 5 * this.getCheckFrequency()) {
+        this.log.warn('Sensors check seems to be stuck. Restart polling');
+        clearTimeout(this.lastSensorsCheck);
+        this.lastSensorsCheck = null;
+        this.pollSensors();
+      }
     }
+    this.timeoutSentinel.refresh();
   }
 
   private pollSensors() {
