@@ -26,6 +26,7 @@ export interface PlatformConfig {
 const polling = new client.Gauge({
   name: 'comelit_vedo_polling',
   help: 'Comelit client polling beat',
+  labelNames: ['service'],
 });
 
 const DEFAULT_HTTP_PORT = 3003;
@@ -54,6 +55,10 @@ export class ComelitVedoPlatform {
 
   private server: http.Server;
 
+  private lastAlarmCheck: number;
+
+  private lastSensorsCheck: number;
+
   constructor(log: Logger, config: PlatformConfig, homebridge: Homebridge) {
     this.log = log;
     this.log('Initializing platform: ', { ...config, alarm_code: '******' });
@@ -68,39 +73,40 @@ export class ComelitVedoPlatform {
     if (!this.server && this.config.export_prometheus_metrics) {
       this.server = expr.listen(this.config.exporter_http_port || DEFAULT_HTTP_PORT);
     }
+    const checkFrequency = this.getCheckFrequency();
+    this.log(`Setting up polling timeout every ${checkFrequency / 1000} secs`);
+    this.pollAlarm();
+    this.pollSensors();
+  }
 
-    const checkFrequency = this.config.update_interval
+  private getCheckFrequency() {
+    return this.config.update_interval
       ? this.config.update_interval * 1000
       : DEFAULT_ALARM_CHECK_TIMEOUT;
-    this.log(`Setting up polling timeout every ${checkFrequency / 1000} secs`);
-    this.timeoutAlarm = setTimeout(async () => {
-      try {
-        if (this.alarm) {
-          this.log('Check alarm status');
-          const alarmAreas = await this.alarm.checkAlarm();
-          if (alarmAreas) {
-            this.log.debug(
-              `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
-            );
-            this.alarm.update(alarmAreas);
-          } else {
-            this.log.warn('No area found');
-          }
-        }
-      } catch (e) {
-        this.log.error(`Polling error: ${e.message}`, e);
-      } finally {
-        polling.set(1);
-        this.log.debug('Reset polling');
-        this.timeoutAlarm.refresh();
-      }
-    }, checkFrequency);
+  }
 
+  private sentinel() {
+    const now = Date.now();
+    if (this.lastAlarmCheck - now > 5 * this.getCheckFrequency()) {
+      this.log.warn('Alarm check seems to be stuck. Restart polling');
+      clearTimeout(this.lastAlarmCheck);
+      this.pollAlarm();
+    }
+
+    if (this.lastSensorsCheck - now > 5 * this.getCheckFrequency()) {
+      this.log.warn('Sensors check seems to be stuck. Restart polling');
+      clearTimeout(this.lastSensorsCheck);
+      this.pollSensors();
+    }
+  }
+
+  private pollSensors() {
     if (this.config.map_sensors) {
       this.timeoutSensors = setTimeout(async () => {
         try {
           if (this.alarm) {
             this.log('Check sensors status');
+            this.lastAlarmCheck = Date.now();
             const zones = await this.alarm.fetchZones();
             if (zones) {
               this.log.debug(
@@ -118,12 +124,38 @@ export class ComelitVedoPlatform {
         } catch (e) {
           this.log.error(`Polling error: ${e.message}`, e);
         } finally {
-          polling.set(1);
+          polling.set({ service: 'sensors' }, 1);
           this.log.debug('Reset polling');
           this.timeoutSensors.refresh();
         }
-      }, checkFrequency);
+      }, this.getCheckFrequency());
     }
+  }
+
+  private pollAlarm() {
+    this.timeoutAlarm = setTimeout(async () => {
+      try {
+        if (this.alarm) {
+          this.log('Check alarm status');
+          this.lastAlarmCheck = Date.now();
+          const alarmAreas = await this.alarm.checkAlarm();
+          if (alarmAreas) {
+            this.log.debug(
+              `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
+            );
+            this.alarm.update(alarmAreas);
+          } else {
+            this.log.warn('No area found');
+          }
+        }
+      } catch (e) {
+        this.log.error(`Polling error: ${e.message}`, e);
+      } finally {
+        polling.set({ service: 'alarm' }, 1);
+        this.log.debug('Reset polling');
+        this.timeoutAlarm.refresh();
+      }
+    }, this.getCheckFrequency());
   }
 
   async accessories(callback: (array: any[]) => void) {
