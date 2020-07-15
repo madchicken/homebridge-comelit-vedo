@@ -6,10 +6,6 @@ import {
   ZoneDesc,
   ZoneStatus,
 } from 'comelit-client';
-import {
-  SecuritySystemCurrentState,
-  SecuritySystemTargetState,
-} from 'hap-nodejs/dist/lib/gen/HomeKit';
 import { intersection } from 'lodash';
 import {
   Callback,
@@ -69,7 +65,8 @@ export class VedoAlarm {
       : [];
     this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
     this.lastLogin = 0;
-    this.currentAlarmStatus = SecuritySystemCurrentState.DISARMED; // Default
+    this.currentAlarmStatus =
+      platform.homebridge.hap.Characteristic.SecuritySystemCurrentState.DISARMED; // Default
     this.log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
     this.getAvailableServices();
   }
@@ -94,11 +91,11 @@ export class VedoAlarm {
 
     this.securityService.setCharacteristic(
       Characteristic.SecuritySystemCurrentState,
-      SecuritySystemCurrentState.DISARMED
+      Characteristic.SecuritySystemCurrentState.DISARMED
     );
     this.securityService.setCharacteristic(
       Characteristic.SecuritySystemTargetState,
-      SecuritySystemTargetState.DISARM
+      Characteristic.SecuritySystemTargetState.DISARM
     );
 
     this.securityService
@@ -114,22 +111,22 @@ export class VedoAlarm {
           const uid = await this.client.loginWithRetry(this.code);
           if (uid) {
             switch (value) {
-              case SecuritySystemTargetState.DISARM:
+              case Characteristic.SecuritySystemTargetState.DISARM:
                 this.log.info('Disarming system');
                 await this.client.disarm(uid, ALL);
                 callback();
                 break;
-              case SecuritySystemTargetState.AWAY_ARM:
+              case Characteristic.SecuritySystemTargetState.AWAY_ARM:
                 this.log.info('Arm system: AWAY');
                 await this.armAreas(this.away_areas, uid);
                 callback();
                 break;
-              case SecuritySystemTargetState.NIGHT_ARM:
+              case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
                 this.log.info('Arm system: NIGHT');
                 await this.armAreas(this.night_areas, uid);
                 callback();
                 break;
-              case SecuritySystemTargetState.STAY_ARM:
+              case Characteristic.SecuritySystemTargetState.STAY_ARM:
                 this.log.info('Arm system: STAY');
                 await this.armAreas(this.home_areas, uid);
                 callback();
@@ -185,31 +182,31 @@ export class VedoAlarm {
         `Alarm triggered in area ${alarmAreas.filter(a => a.triggered || a.sabotaged).join(', ')}`
       );
     }
-    if (trigger && currentStatus !== SecuritySystemCurrentState.ALARM_TRIGGERED) {
+    if (trigger && currentStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .updateValue(SecuritySystemCurrentState.ALARM_TRIGGERED);
+        .updateValue(Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
     } else {
       let newStatus = status
-        ? SecuritySystemCurrentState.AWAY_ARM
-        : SecuritySystemCurrentState.DISARMED;
+        ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        : Characteristic.SecuritySystemCurrentState.DISARMED;
 
       if (status) {
         if (
           this.away_areas.length &&
           intersection(armedAreas, this.away_areas).length === armedAreas.length
         ) {
-          newStatus = SecuritySystemCurrentState.AWAY_ARM;
+          newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
         } else if (
           this.home_areas.length &&
           intersection(armedAreas, this.home_areas).length === armedAreas.length
         ) {
-          newStatus = SecuritySystemCurrentState.STAY_ARM;
+          newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
         } else if (
           this.night_areas.length &&
           intersection(armedAreas, this.night_areas).length === armedAreas.length
         ) {
-          newStatus = SecuritySystemCurrentState.NIGHT_ARM;
+          newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
         }
       }
 

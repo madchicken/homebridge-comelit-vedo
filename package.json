@@ -24,7 +24,7 @@
     "config.schema.json"
   ],
   "scripts": {
-    "build": "yarn clean && yarn build-ts && yarn lint",
+    "build": "yarn clean && yarn build-ts",
     "test": "jest --forceExit --coverage --verbose",
     "watch-test": "yarn run test -- --watchAll",
     "build-ts": "tsc",
@@ -60,7 +60,7 @@
     "prettier": "^1.19.1",
     "pretty-quick": "^2.0.1",
     "rimraf": "^3.0.2",
-    "homebridge": "^1.1.1",
-    "hap-nodejs": "^0.7.7"
+    "homebridge": "^1.2.0-beta.29",
+    "hap-nodejs": "^0.8.0-beta.14"
   }
 }

@@ -1,6 +1,5 @@
 import { ZoneStatus } from 'comelit-client';
 import { Logger, PlatformAccessory, Service } from 'homebridge';
-import { OccupancyDetected } from 'hap-nodejs/dist/lib/gen/HomeKit';
 import client from 'prom-client';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 
@@ -58,10 +57,10 @@ export class VedoSensor {
     const currentValue = this.sensorService.getCharacteristic(Characteristic.OccupancyDetected)
       .value;
     const newValue = zoneStatus.open
-      ? OccupancyDetected.OCCUPANCY_DETECTED
-      : OccupancyDetected.OCCUPANCY_NOT_DETECTED;
+      ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
+      : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED;
     if (currentValue !== newValue) {
-      if (newValue === OccupancyDetected.OCCUPANCY_DETECTED) {
+      if (newValue === Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
         this.log.debug(`Occupancy detected for sensor ${this.name}`);
         triggers_count.inc();
       }
