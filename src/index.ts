@@ -1,9 +1,7 @@
 import { ComelitVedoPlatform } from './comelit-vedo-platform';
-import { Homebridge } from '../types';
+import { API } from 'homebridge';
+import { PLATFORM_NAME, PLUGIN_IDENTIFIER } from './constants';
 
-export let HomebridgeAPI: Homebridge;
-
-export default function(homebridge: Homebridge) {
-  HomebridgeAPI = homebridge;
-  homebridge.registerPlatform('homebridge-comelit-vedo', 'ComelitVedo', ComelitVedoPlatform, false);
+export default function(homebridge: API) {
+  homebridge.registerPlatform(PLUGIN_IDENTIFIER, PLATFORM_NAME, ComelitVedoPlatform);
 }

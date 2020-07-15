@@ -1,9 +1,8 @@
 import { ZoneStatus } from 'comelit-client';
-import { Categories, Characteristic, Service } from 'hap-nodejs';
-import { HomebridgeAPI } from '../index';
+import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { OccupancyDetected } from 'hap-nodejs/dist/lib/gen/HomeKit';
 import client from 'prom-client';
-import { Logger } from '../../types';
+import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 
 const triggers_count = new client.Counter({
   name: 'comelit_vedo_sensor_triggers',
@@ -12,20 +11,32 @@ const triggers_count = new client.Counter({
 
 export class VedoSensor {
   readonly log: Logger;
+  readonly platform: ComelitVedoPlatform;
+  readonly accessory: PlatformAccessory;
   readonly name: string;
-  readonly category: Categories;
   private readonly zoneStatus: ZoneStatus;
   private sensorService: Service;
 
-  constructor(log: Logger, name: string, zoneStatus: ZoneStatus) {
-    this.log = log;
+  constructor(
+    platform: ComelitVedoPlatform,
+    accessory: PlatformAccessory,
+    name: string,
+    zoneStatus: ZoneStatus
+  ) {
+    this.log = platform.log;
+    this.accessory = accessory;
+    this.platform = platform;
     this.name = name;
-    this.category = Categories.SENSOR;
     this.zoneStatus = zoneStatus;
+    this.getAvailableServices();
   }
 
-  getServices(): Service[] {
-    const accessoryInformation = new HomebridgeAPI.hap.Service.AccessoryInformation(null, null);
+  private getAvailableServices(): Service[] {
+    const Service = this.platform.homebridge.hap.Service;
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
+    const accessoryInformation =
+      this.accessory.getService(Service.AccessoryInformation) ||
+      this.accessory.addService(Service.AccessoryInformation);
     accessoryInformation
       .setCharacteristic(Characteristic.Name, 'Vedo Alarm Sensor')
       .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
@@ -33,13 +44,17 @@ export class VedoSensor {
       .setCharacteristic(Characteristic.FirmwareRevision, 'None')
       .setCharacteristic(Characteristic.SerialNumber, 'None');
 
-    this.sensorService = new HomebridgeAPI.hap.Service.OccupancySensor(this.name, null);
+    this.sensorService =
+      this.accessory.getService(Service.OccupancySensor) ||
+      this.accessory.addService(Service.OccupancySensor);
+    this.sensorService.setCharacteristic(Characteristic.Name, this.name);
     this.update(this.zoneStatus);
 
     return [accessoryInformation, this.sensorService];
   }
 
   update(zoneStatus: ZoneStatus) {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
     const currentValue = this.sensorService.getCharacteristic(Characteristic.OccupancyDetected)
       .value;
     const newValue = zoneStatus.open
@@ -47,7 +62,7 @@ export class VedoSensor {
       : OccupancyDetected.OCCUPANCY_NOT_DETECTED;
     if (currentValue !== newValue) {
       if (newValue === OccupancyDetected.OCCUPANCY_DETECTED) {
-        this.log(`Occupancy detected for sensor ${this.name}`);
+        this.log.debug(`Occupancy detected for sensor ${this.name}`);
         triggers_count.inc();
       }
       this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
