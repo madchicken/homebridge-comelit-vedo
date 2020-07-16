@@ -1,12 +1,4 @@
 import {
-  Callback,
-  Categories,
-  Characteristic,
-  CharacteristicEventTypes,
-  Service,
-} from 'hap-nodejs';
-import { HomebridgeAPI } from '../index';
-import {
   AlarmArea,
   AreaDesc,
   VedoClient,
@@ -14,12 +6,16 @@ import {
   ZoneDesc,
   ZoneStatus,
 } from 'comelit-client';
-import {
-  SecuritySystemCurrentState,
-  SecuritySystemTargetState,
-} from 'hap-nodejs/dist/lib/gen/HomeKit';
 import { intersection } from 'lodash';
-import { Logger } from '../../types';
+import {
+  Callback,
+  CharacteristicEventTypes,
+  CharacteristicGetCallback,
+  Logger,
+  PlatformAccessory,
+  Service,
+} from 'homebridge';
+import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 
 const ALL = 32;
 
@@ -35,8 +31,9 @@ export class VedoAlarm {
   private readonly code: string;
   readonly client: VedoClient;
   readonly log: Logger;
+  readonly accessory: PlatformAccessory;
+  readonly platform: ComelitVedoPlatform;
   readonly name: string;
-  readonly category: Categories;
   private securityService: Service;
   private lastUID: string;
   private lastLogin: number;
@@ -45,25 +42,41 @@ export class VedoAlarm {
   private readonly home_areas: string[];
   private zones: ZoneDesc;
   private areas: AreaDesc;
+  private currentAlarmStatus: number;
 
-  constructor(log: Logger, address: string, port: number, code: string, config: VedoAlarmConfig) {
-    this.log = log;
+  constructor(
+    platform: ComelitVedoPlatform,
+    accessory: PlatformAccessory,
+    address: string,
+    port: number,
+    code: string,
+    config: VedoAlarmConfig
+  ) {
+    this.platform = platform;
+    this.accessory = accessory;
+    this.log = platform.log;
     this.code = code;
-    this.name = 'Vedo Alarm @ ' + address;
-    this.category = Categories.SECURITY_SYSTEM;
+    this.name = 'VEDO Alarm @ ' + address;
     this.client = new VedoClient(address, port, config);
-    this.client.setLogger(log);
+    this.client.setLogger(platform.log);
     this.away_areas = config.away_areas ? config.away_areas.map(a => a.toLowerCase().trim()) : [];
     this.night_areas = config.night_areas
       ? config.night_areas.map(a => a.toLowerCase().trim())
       : [];
     this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
     this.lastLogin = 0;
-    log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
+    this.currentAlarmStatus =
+      platform.homebridge.hap.Characteristic.SecuritySystemCurrentState.DISARMED; // Default
+    this.log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
+    this.getAvailableServices();
   }
 
-  getServices(): Service[] {
-    const accessoryInformation = new HomebridgeAPI.hap.Service.AccessoryInformation(null, null);
+  private getAvailableServices(): Service[] {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
+    const Service = this.platform.homebridge.hap.Service;
+    const accessoryInformation =
+      this.accessory.getService(Service.AccessoryInformation) ||
+      this.accessory.addService(Service.AccessoryInformation);
     accessoryInformation
       .setCharacteristic(Characteristic.Name, 'Vedo Alarm')
       .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
@@ -71,49 +84,24 @@ export class VedoAlarm {
       .setCharacteristic(Characteristic.FirmwareRevision, 'None')
       .setCharacteristic(Characteristic.SerialNumber, 'None');
 
-    this.securityService = new HomebridgeAPI.hap.Service.SecuritySystem('Vedo Alarm', null);
-    this.securityService
-      .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-      .setValue(SecuritySystemCurrentState.DISARMED);
-    this.securityService
-      .getCharacteristic(Characteristic.SecuritySystemTargetState)
-      .setValue(SecuritySystemTargetState.DISARM);
+    this.securityService =
+      this.accessory.getService(Service.SecuritySystem) ||
+      this.accessory.addService(Service.SecuritySystem);
+    this.securityService.setCharacteristic(Characteristic.Name, 'VEDO Alarm');
+
+    this.securityService.setCharacteristic(
+      Characteristic.SecuritySystemCurrentState,
+      Characteristic.SecuritySystemCurrentState.DISARMED
+    );
+    this.securityService.setCharacteristic(
+      Characteristic.SecuritySystemTargetState,
+      Characteristic.SecuritySystemTargetState.DISARM
+    );
 
     this.securityService
       .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-      .on(CharacteristicEventTypes.GET, async (callback: Callback) => {
-        try {
-          const uid = await this.client.loginWithRetry(this.code);
-          const alarmAreas = await this.client.findActiveAreas(uid);
-          const armedAreas = alarmAreas
-            .filter(area => area.armed)
-            .map(area => area.description.toLowerCase());
-          const trigger = alarmAreas.reduce(
-            (armed: boolean, area: AlarmArea) => armed || area.triggered,
-            false
-          );
-          if (trigger) {
-            callback(null, SecuritySystemCurrentState.ALARM_TRIGGERED);
-          } else {
-            if (armedAreas.length) {
-              if (this.night_areas.length) {
-                if (intersection(armedAreas, this.night_areas).length === armedAreas.length) {
-                  callback(null, SecuritySystemCurrentState.NIGHT_ARM);
-                }
-              } else if (this.home_areas.length) {
-                if (intersection(armedAreas, this.home_areas).length === armedAreas.length) {
-                  callback(null, SecuritySystemCurrentState.STAY_ARM);
-                }
-              } else {
-                callback(null, SecuritySystemCurrentState.AWAY_ARM);
-              }
-            } else {
-              callback(null, SecuritySystemCurrentState.DISARMED);
-            }
-          }
-        } catch (e) {
-          callback(e.message);
-        }
+      .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
+        callback(null, this.currentAlarmStatus);
       });
 
     this.securityService
@@ -123,23 +111,23 @@ export class VedoAlarm {
           const uid = await this.client.loginWithRetry(this.code);
           if (uid) {
             switch (value) {
-              case SecuritySystemTargetState.DISARM:
-                this.log('Disarming system');
+              case Characteristic.SecuritySystemTargetState.DISARM:
+                this.log.info('Disarming system');
                 await this.client.disarm(uid, ALL);
                 callback();
                 break;
-              case SecuritySystemTargetState.AWAY_ARM:
-                this.log('Arm system: AWAY');
+              case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+                this.log.info('Arm system: AWAY');
                 await this.armAreas(this.away_areas, uid);
                 callback();
                 break;
-              case SecuritySystemTargetState.NIGHT_ARM:
-                this.log('Arm system: NIGHT');
+              case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+                this.log.info('Arm system: NIGHT');
                 await this.armAreas(this.night_areas, uid);
                 callback();
                 break;
-              case SecuritySystemTargetState.STAY_ARM:
-                this.log('Arm system: STAY');
+              case Characteristic.SecuritySystemTargetState.STAY_ARM:
+                this.log.info('Arm system: STAY');
                 await this.armAreas(this.home_areas, uid);
                 callback();
                 break;
@@ -158,7 +146,7 @@ export class VedoAlarm {
   }
 
   private async armAreas(areas: string[], uid: string): Promise<number[]> {
-    this.log(`Arming system: ${areas.length ? areas.join(', ') : 'ALL SYSTEM'}`);
+    this.log.info(`Arming system: ${areas.length ? areas.join(', ') : 'ALL SYSTEM'}`);
     const alarmAreas = await this.client.findActiveAreas(uid);
     if (areas && areas.length) {
       const indexes = areas
@@ -175,6 +163,7 @@ export class VedoAlarm {
   }
 
   update(alarmAreas: AlarmArea[]) {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
     const currentStatus = this.securityService.getCharacteristic(
       Characteristic.SecuritySystemCurrentState
     ).value;
@@ -189,38 +178,39 @@ export class VedoAlarm {
       false
     );
     if (trigger) {
-      this.log(
+      this.log.warn(
         `Alarm triggered in area ${alarmAreas.filter(a => a.triggered || a.sabotaged).join(', ')}`
       );
     }
-    if (trigger && currentStatus !== SecuritySystemCurrentState.ALARM_TRIGGERED) {
+    if (trigger && currentStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .updateValue(SecuritySystemCurrentState.ALARM_TRIGGERED);
+        .updateValue(Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
     } else {
       let newStatus = status
-        ? SecuritySystemCurrentState.AWAY_ARM
-        : SecuritySystemCurrentState.DISARMED;
+        ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        : Characteristic.SecuritySystemCurrentState.DISARMED;
 
       if (status) {
         if (
           this.away_areas.length &&
           intersection(armedAreas, this.away_areas).length === armedAreas.length
         ) {
-          newStatus = SecuritySystemCurrentState.AWAY_ARM;
+          newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
         } else if (
           this.home_areas.length &&
           intersection(armedAreas, this.home_areas).length === armedAreas.length
         ) {
-          newStatus = SecuritySystemCurrentState.STAY_ARM;
+          newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
         } else if (
           this.night_areas.length &&
           intersection(armedAreas, this.night_areas).length === armedAreas.length
         ) {
-          newStatus = SecuritySystemCurrentState.NIGHT_ARM;
+          newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
         }
       }
 
+      this.currentAlarmStatus = newStatus;
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
         .updateValue(newStatus);
