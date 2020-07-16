@@ -37,7 +37,7 @@ export class VedoSensor {
       this.accessory.getService(Service.AccessoryInformation) ||
       this.accessory.addService(Service.AccessoryInformation);
     accessoryInformation
-      .setCharacteristic(Characteristic.Name, 'Vedo Alarm Sensor')
+      .setCharacteristic(Characteristic.Name, this.name)
       .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
       .setCharacteristic(Characteristic.Model, 'None')
       .setCharacteristic(Characteristic.FirmwareRevision, 'None')
