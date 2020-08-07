@@ -164,31 +164,31 @@ export class ComelitVedoPlatform implements DynamicPlatformPlugin {
 
   private pollAlarm() {
     this.timeoutAlarm = setTimeout(async () => {
-      await this.singleAreaCheck();
+      try {
+        await this.singleAreaCheck();
+      } catch (e) {
+        this.log.error(`Polling error: ${e.message}`, e);
+      } finally {
+        polling.set({ service: 'alarm' }, 1);
+        this.log.debug('Reset polling');
+        this.timeoutAlarm.refresh();
+      }
     }, this.getCheckFrequency());
   }
 
   private async singleAreaCheck() {
-    try {
-      if (this.alarm) {
-        this.log.debug('Check alarm status');
-        this.lastAlarmCheck = Date.now();
-        const alarmAreas = await this.alarm.checkAlarm();
-        if (alarmAreas) {
-          this.log.debug(
-            `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
-          );
-          this.alarm.update(alarmAreas);
-        } else {
-          this.log.warn('No area found');
-        }
+    if (this.alarm) {
+      this.log.debug('Check alarm status');
+      this.lastAlarmCheck = Date.now();
+      const alarmAreas = await this.alarm.checkAlarm();
+      if (alarmAreas) {
+        this.log.debug(
+          `Found ${alarmAreas.length} areas: ${alarmAreas.map(a => a.description).join(', ')}`
+        );
+        this.alarm.update(alarmAreas);
+      } else {
+        this.log.warn('No area found');
       }
-    } catch (e) {
-      this.log.error(`Polling error: ${e.message}`, e);
-    } finally {
-      polling.set({ service: 'alarm' }, 1);
-      this.log.debug('Reset polling');
-      this.timeoutAlarm.refresh();
     }
   }
 
