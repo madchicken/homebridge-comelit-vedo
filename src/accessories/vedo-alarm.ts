@@ -89,15 +89,6 @@ export class VedoAlarm {
       this.accessory.addService(Service.SecuritySystem);
     this.securityService.setCharacteristic(Characteristic.Name, 'VEDO Alarm');
 
-    this.securityService.setCharacteristic(
-      Characteristic.SecuritySystemCurrentState,
-      Characteristic.SecuritySystemCurrentState.DISARMED
-    );
-    this.securityService.setCharacteristic(
-      Characteristic.SecuritySystemTargetState,
-      Characteristic.SecuritySystemTargetState.DISARM
-    );
-
     this.securityService
       .getCharacteristic(Characteristic.SecuritySystemCurrentState)
       .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
