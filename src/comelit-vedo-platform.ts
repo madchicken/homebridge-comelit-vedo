@@ -219,7 +219,7 @@ export class ComelitVedoPlatform implements DynamicPlatformPlugin {
         if (zones && zones.length) {
           this.mappedZones = zones.map(zone => {
             const sensorAccessory = this.createHapAccessory(zone.description, Categories.SENSOR);
-            return new VedoSensor(this, sensorAccessory, zone.description, zone);
+            return new VedoSensor(this, sensorAccessory, zone.description, zone, this.alarm);
           });
         }
       }

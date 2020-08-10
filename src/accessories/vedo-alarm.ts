@@ -210,14 +210,7 @@ export class VedoAlarm {
 
   async fetchZones(): Promise<ZoneStatus[]> {
     try {
-      if (!this.lastUID || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT) {
-        if (this.lastUID) {
-          await this.client.logout(this.lastUID);
-        }
-        this.lastUID = null;
-        this.lastUID = await this.client.loginWithRetry(this.code);
-        this.lastLogin = new Date().getTime();
-      }
+      await this.refreshUID();
       if (!this.zones) {
         this.zones = await this.client.zoneDesc(this.lastUID);
       }
@@ -233,14 +226,7 @@ export class VedoAlarm {
 
   async checkAlarm(): Promise<AlarmArea[]> {
     try {
-      if (this.shouldLogin()) {
-        if (this.lastUID) {
-          await this.client.logout(this.lastUID);
-        }
-        this.lastUID = null;
-        this.lastUID = await this.client.loginWithRetry(this.code);
-        this.lastLogin = new Date().getTime();
-      }
+      await this.refreshUID();
       if (!this.areas) {
         this.areas = await this.client.areaDesc(this.lastUID);
       }
@@ -254,6 +240,17 @@ export class VedoAlarm {
     return null;
   }
 
+  private async refreshUID() {
+    if (this.shouldLogin() || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT) {
+      if (this.lastUID) {
+        await this.client.logout(this.lastUID);
+      }
+      this.lastUID = null;
+      this.lastUID = await this.client.loginWithRetry(this.code);
+      this.lastLogin = new Date().getTime();
+    }
+  }
+
   private shouldLogin() {
     return !this.lastUID || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT;
   }
@@ -261,5 +258,29 @@ export class VedoAlarm {
   private getTimeElapsedFromLastLogin() {
     const now = new Date().getTime();
     return now - this.lastLogin;
+  }
+
+  async includeZone(index: number) {
+    try {
+      await this.refreshUID();
+      await this.client.includeZone(this.lastUID, index);
+    } catch (e) {
+      this.log.error(`Error including zone: ${e.message}`);
+    }
+    this.log.error('Unable to fetch token');
+    this.lastUID = null;
+    return null;
+  }
+
+  async excludeZone(index: number) {
+    try {
+      await this.refreshUID();
+      await this.client.excludeZone(this.lastUID, index);
+    } catch (e) {
+      this.log.error(`Error excluding zone: ${e.message}`);
+    }
+    this.log.error('Unable to fetch token');
+    this.lastUID = null;
+    return null;
   }
 }
