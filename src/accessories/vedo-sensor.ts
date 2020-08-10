@@ -47,6 +47,7 @@ export class VedoSensor {
       this.accessory.getService(Service.OccupancySensor) ||
       this.accessory.addService(Service.OccupancySensor);
     this.sensorService.setCharacteristic(Characteristic.Name, this.name);
+
     this.update(this.zoneStatus);
 
     return [accessoryInformation, this.sensorService];
@@ -66,5 +67,7 @@ export class VedoSensor {
       }
       this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
     }
+
+    this.sensorService.updateCharacteristic(Characteristic.Active, !zoneStatus.excluded);
   }
 }
