@@ -206,7 +206,10 @@ export class VedoAlarm {
         callback(null, this.currentAlarmStatus);
       });
 
-    const validValues = [Characteristic.SecuritySystemTargetState.AWAY_ARM];
+    const validValues = [
+      Characteristic.SecuritySystemTargetState.DISARM,
+      Characteristic.SecuritySystemTargetState.AWAY_ARM,
+    ];
 
     if (this.night_areas.length) {
       validValues.push(Characteristic.SecuritySystemTargetState.NIGHT_ARM);
