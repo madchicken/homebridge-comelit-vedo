@@ -28,12 +28,12 @@ export interface VedoAlarmConfig extends Partial<VedoClientConfig> {
 const DEFAULT_LOGIN_TIMEOUT = 15000;
 
 export class VedoAlarm {
-  private readonly code: string;
   readonly client: VedoClient;
   readonly log: Logger;
   readonly accessory: PlatformAccessory;
   readonly platform: ComelitVedoPlatform;
   readonly name: string;
+  private readonly code: string;
   private securityService: Service;
   private lastUID: string;
   private lastLogin: number;
@@ -69,88 +69,6 @@ export class VedoAlarm {
       platform.homebridge.hap.Characteristic.SecuritySystemCurrentState.DISARMED; // Default
     this.log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
     this.getAvailableServices();
-  }
-
-  private getAvailableServices(): Service[] {
-    const Characteristic = this.platform.homebridge.hap.Characteristic;
-    const Service = this.platform.homebridge.hap.Service;
-    const accessoryInformation =
-      this.accessory.getService(Service.AccessoryInformation) ||
-      this.accessory.addService(Service.AccessoryInformation);
-    accessoryInformation
-      .setCharacteristic(Characteristic.Name, 'Vedo Alarm')
-      .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
-      .setCharacteristic(Characteristic.Model, 'None')
-      .setCharacteristic(Characteristic.FirmwareRevision, 'None')
-      .setCharacteristic(Characteristic.SerialNumber, 'None');
-
-    this.securityService =
-      this.accessory.getService(Service.SecuritySystem) ||
-      this.accessory.addService(Service.SecuritySystem);
-    this.securityService.setCharacteristic(Characteristic.Name, 'VEDO Alarm');
-
-    this.securityService
-      .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-      .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
-        callback(null, this.currentAlarmStatus);
-      });
-
-    this.securityService
-      .getCharacteristic(Characteristic.SecuritySystemTargetState)
-      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) => {
-        try {
-          const uid = await this.client.loginWithRetry(this.code);
-          if (uid) {
-            switch (value) {
-              case Characteristic.SecuritySystemTargetState.DISARM:
-                this.log.info('Disarming system');
-                await this.client.disarm(uid, ALL);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                this.log.info('Arm system: AWAY');
-                await this.armAreas(this.away_areas, uid);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-                this.log.info('Arm system: NIGHT');
-                await this.armAreas(this.night_areas, uid);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.STAY_ARM:
-                this.log.info('Arm system: STAY');
-                await this.armAreas(this.home_areas, uid);
-                callback();
-                break;
-              default:
-                callback(new Error(`Cannot execute requested action ${value}`));
-            }
-          } else {
-            callback(new Error('Cannot login into system'));
-          }
-        } catch (e) {
-          callback(e);
-        }
-      });
-
-    return [accessoryInformation, this.securityService];
-  }
-
-  private async armAreas(areas: string[], uid: string): Promise<number[]> {
-    this.log.info(`Arming system: ${areas.length ? areas.join(', ') : 'ALL SYSTEM'}`);
-    const alarmAreas = await this.client.findActiveAreas(uid);
-    if (areas && areas.length) {
-      const indexes = areas
-        .map(area => alarmAreas.findIndex(a => a.description.toLowerCase() === area))
-        .filter(index => index !== -1);
-      if (indexes.length) {
-        const promises = indexes.map(index => this.client.arm(uid, index));
-        await Promise.all(promises);
-        return indexes;
-      }
-    }
-    await this.client.arm(uid, ALL);
-    return [ALL];
   }
 
   update(alarmAreas: AlarmArea[]) {
@@ -210,14 +128,7 @@ export class VedoAlarm {
 
   async fetchZones(): Promise<ZoneStatus[]> {
     try {
-      if (!this.lastUID || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT) {
-        if (this.lastUID) {
-          await this.client.logout(this.lastUID);
-        }
-        this.lastUID = null;
-        this.lastUID = await this.client.loginWithRetry(this.code);
-        this.lastLogin = new Date().getTime();
-      }
+      await this.refreshUID();
       if (!this.zones) {
         this.zones = await this.client.zoneDesc(this.lastUID);
       }
@@ -233,14 +144,7 @@ export class VedoAlarm {
 
   async checkAlarm(): Promise<AlarmArea[]> {
     try {
-      if (this.shouldLogin()) {
-        if (this.lastUID) {
-          await this.client.logout(this.lastUID);
-        }
-        this.lastUID = null;
-        this.lastUID = await this.client.loginWithRetry(this.code);
-        this.lastLogin = new Date().getTime();
-      }
+      await this.refreshUID();
       if (!this.areas) {
         this.areas = await this.client.areaDesc(this.lastUID);
       }
@@ -252,6 +156,139 @@ export class VedoAlarm {
     this.log.error('Unable to fetch token');
     this.lastUID = null;
     return null;
+  }
+
+  async includeZone(index: number) {
+    try {
+      await this.refreshUID();
+      await this.client.includeZone(this.lastUID, index);
+    } catch (e) {
+      this.log.error(`Error including zone: ${e.message}`);
+    }
+    this.log.error('Unable to fetch token');
+    this.lastUID = null;
+    return null;
+  }
+
+  async excludeZone(index: number) {
+    try {
+      await this.refreshUID();
+      await this.client.excludeZone(this.lastUID, index);
+    } catch (e) {
+      this.log.error(`Error excluding zone: ${e.message}`);
+    }
+    this.log.error('Unable to fetch token');
+    this.lastUID = null;
+    return null;
+  }
+
+  private getAvailableServices(): Service[] {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
+    const Service = this.platform.homebridge.hap.Service;
+    const accessoryInformation =
+      this.accessory.getService(Service.AccessoryInformation) ||
+      this.accessory.addService(Service.AccessoryInformation);
+    accessoryInformation
+      .setCharacteristic(Characteristic.Name, 'Vedo Alarm')
+      .setCharacteristic(Characteristic.Manufacturer, 'Comelit')
+      .setCharacteristic(Characteristic.Model, 'None')
+      .setCharacteristic(Characteristic.FirmwareRevision, 'None')
+      .setCharacteristic(Characteristic.SerialNumber, 'None');
+
+    this.securityService =
+      this.accessory.getService(Service.SecuritySystem) ||
+      this.accessory.addService(Service.SecuritySystem);
+    this.securityService.setCharacteristic(Characteristic.Name, 'VEDO Alarm');
+
+    this.securityService
+      .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+      .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
+        callback(null, this.currentAlarmStatus);
+      });
+
+    const validValues = [
+      Characteristic.SecuritySystemTargetState.DISARM,
+      Characteristic.SecuritySystemTargetState.AWAY_ARM,
+    ];
+
+    if (this.night_areas.length) {
+      validValues.push(Characteristic.SecuritySystemTargetState.NIGHT_ARM);
+    }
+
+    if (this.home_areas.length) {
+      validValues.push(Characteristic.SecuritySystemTargetState.STAY_ARM);
+    }
+
+    this.securityService
+      .getCharacteristic(Characteristic.SecuritySystemTargetState)
+      .setProps({
+        validValues,
+      })
+      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) => {
+        try {
+          const uid = await this.client.loginWithRetry(this.code);
+          if (uid) {
+            switch (value) {
+              case Characteristic.SecuritySystemTargetState.DISARM:
+                this.log.info('Disarming system');
+                await this.client.disarm(uid, ALL);
+                callback();
+                break;
+              case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+                this.log.info('Arm system: AWAY');
+                await this.armAreas(this.away_areas, uid);
+                callback();
+                break;
+              case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+                this.log.info('Arm system: NIGHT');
+                await this.armAreas(this.night_areas, uid);
+                callback();
+                break;
+              case Characteristic.SecuritySystemTargetState.STAY_ARM:
+                this.log.info('Arm system: STAY');
+                await this.armAreas(this.home_areas, uid);
+                callback();
+                break;
+              default:
+                callback(new Error(`Cannot execute requested action ${value}`));
+            }
+          } else {
+            callback(new Error('Cannot login into system'));
+          }
+        } catch (e) {
+          callback(e);
+        }
+      });
+
+    return [accessoryInformation, this.securityService];
+  }
+
+  private async armAreas(areas: string[], uid: string): Promise<number[]> {
+    this.log.info(`Arming system: ${areas.length ? areas.join(', ') : 'ALL SYSTEM'}`);
+    const alarmAreas = await this.client.findActiveAreas(uid);
+    if (areas && areas.length) {
+      const indexes = areas
+        .map(area => alarmAreas.findIndex(a => a.description.toLowerCase() === area))
+        .filter(index => index !== -1);
+      if (indexes.length) {
+        const promises = indexes.map(index => this.client.arm(uid, index));
+        await Promise.all(promises);
+        return indexes;
+      }
+    }
+    await this.client.arm(uid, ALL);
+    return [ALL];
+  }
+
+  private async refreshUID() {
+    if (this.shouldLogin() || this.getTimeElapsedFromLastLogin() > DEFAULT_LOGIN_TIMEOUT) {
+      if (this.lastUID) {
+        await this.client.logout(this.lastUID);
+      }
+      this.lastUID = null;
+      this.lastUID = await this.client.loginWithRetry(this.code);
+      this.lastLogin = new Date().getTime();
+    }
   }
 
   private shouldLogin() {

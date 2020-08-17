@@ -1,7 +1,8 @@
 import { ZoneStatus } from 'comelit-client';
-import { Logger, PlatformAccessory, Service } from 'homebridge';
+import { Callback, CharacteristicEventTypes, Logger, PlatformAccessory, Service } from 'homebridge';
 import client from 'prom-client';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
+import { VedoAlarm } from './vedo-alarm';
 
 const triggers_count = new client.Counter({
   name: 'comelit_vedo_sensor_triggers',
@@ -13,21 +14,44 @@ export class VedoSensor {
   readonly platform: ComelitVedoPlatform;
   readonly accessory: PlatformAccessory;
   readonly name: string;
+  readonly alarm: VedoAlarm;
   private readonly zoneStatus: ZoneStatus;
   private sensorService: Service;
+  private switchService: Service;
 
   constructor(
     platform: ComelitVedoPlatform,
     accessory: PlatformAccessory,
     name: string,
-    zoneStatus: ZoneStatus
+    zoneStatus: ZoneStatus,
+    alarm: VedoAlarm
   ) {
     this.log = platform.log;
     this.accessory = accessory;
     this.platform = platform;
     this.name = name;
     this.zoneStatus = zoneStatus;
+    this.alarm = alarm;
     this.getAvailableServices();
+  }
+
+  update(zoneStatus: ZoneStatus) {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
+    const currentValue = this.sensorService.getCharacteristic(Characteristic.OccupancyDetected)
+      .value;
+    const newValue = zoneStatus.open
+      ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
+      : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED;
+    if (currentValue !== newValue) {
+      if (newValue === Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
+        this.log.debug(`Occupancy detected for sensor ${this.name}`);
+        triggers_count.inc();
+      }
+      this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
+    }
+
+    this.sensorService.updateCharacteristic(Characteristic.Active, !zoneStatus.excluded);
+    Object.assign(this.zoneStatus, zoneStatus);
   }
 
   private getAvailableServices(): Service[] {
@@ -47,24 +71,30 @@ export class VedoSensor {
       this.accessory.getService(Service.OccupancySensor) ||
       this.accessory.addService(Service.OccupancySensor);
     this.sensorService.setCharacteristic(Characteristic.Name, this.name);
+
     this.update(this.zoneStatus);
 
-    return [accessoryInformation, this.sensorService];
-  }
+    this.switchService =
+      this.accessory.getService(Service.Switch) || this.accessory.addService(Service.Switch);
 
-  update(zoneStatus: ZoneStatus) {
-    const Characteristic = this.platform.homebridge.hap.Characteristic;
-    const currentValue = this.sensorService.getCharacteristic(Characteristic.OccupancyDetected)
-      .value;
-    const newValue = zoneStatus.open
-      ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
-      : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED;
-    if (currentValue !== newValue) {
-      if (newValue === Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
-        this.log.debug(`Occupancy detected for sensor ${this.name}`);
-        triggers_count.inc();
-      }
-      this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
-    }
+    this.switchService
+      .getCharacteristic(Characteristic.On)
+      .on(CharacteristicEventTypes.SET, async (value: boolean, callback: Callback) => {
+        try {
+          if (value) {
+            await this.alarm.includeZone(this.zoneStatus.index);
+          } else {
+            await this.alarm.excludeZone(this.zoneStatus.index);
+          }
+          return callback();
+        } catch (e) {
+          callback(e);
+        }
+      })
+      .on(CharacteristicEventTypes.GET, (callback: Callback) => {
+        return callback(null, this.zoneStatus.excluded === false);
+      });
+
+    return [accessoryInformation, this.sensorService, this.switchService];
   }
 }

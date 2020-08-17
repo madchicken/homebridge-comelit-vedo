@@ -1129,10 +1129,10 @@ combined-stream@^1.0.6, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-comelit-client@^1.7.3:
-  version "1.7.3"
-  resolved "https://registry.yarnpkg.com/comelit-client/-/comelit-client-1.7.3.tgz#8877a3770b4f95e5a05154a9d7db527613dfa67f"
-  integrity sha512-XfQlL5KaNjBuNsoGjQAW7Hbs7dUufC99z7GyHv0pghZ6cBSuCxK/cbp3dvD7p8u4ximQjsNdhh7yvxdNTVCZNg==
+comelit-client@^1.7.5:
+  version "1.7.5"
+  resolved "https://registry.yarnpkg.com/comelit-client/-/comelit-client-1.7.5.tgz#3b8b41b8c5841c8646fedda54af40da1987e4620"
+  integrity sha512-EgoSwlwhfs9+4n+YDxqcM6fhVmmvOga/dUoUP37Gb1CMYQWkvhEShETZn4Br8bjlwiz0+JvzqMpjWTNjsuQjOw==
   dependencies:
     async-mqtt "2.6.1"
     axios "0.19.2"
@@ -3348,7 +3348,7 @@ lodash.sortby@^4.7.0:
   resolved "https://registry.yarnpkg.com/lodash.sortby/-/lodash.sortby-4.7.0.tgz#edd14c824e2cc9c1e0b0a1b42bb5210516a42438"
   integrity sha1-7dFMgk4sycHgsKG0K7UhBRakJDg=
 
-lodash@4.17.19, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15:
+lodash@4.17.19, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19:
   version "4.17.19"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.19.tgz#e48ddedbe30b3321783c5b4301fbd353bc1e4a4b"
   integrity sha512-JNvd8XER9GQX0v2qJgsaN/mzFCNA5BRe/j8JN9d+tWyGLSodKQHKFicdwNYzWwI3wjRnaKPsGj1XkBjx/F96DQ==
@@ -5087,15 +5087,10 @@ typedarray@^0.0.6:
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript@3.9.7:
+typescript@3.9.7, typescript@^3.9.7:
   version "3.9.7"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.7.tgz#98d600a5ebdc38f40cb277522f12dc800e9e25fa"
   integrity sha512-BLbiRkiBzAwsjut4x/dsibSTB6yWpwT5qWmC2OfuCg3GgVQCSgMs4vEctYPhsaGtd0AeuuHMkjZ2h2WG8MSzRw==
-
-typescript@^3.7.4:
-  version "3.8.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.8.3.tgz#409eb8544ea0335711205869ec458ab109ee1061"
-  integrity sha512-MYlEfn5VrLNsgudQTVJeNaQFUAI7DkhnOjdpAp4T+ku1TfQClewlbSuTVHiA+8skNBgaf02TL/kLOvig4y3G8w==
 
 ultron@~1.1.0:
   version "1.1.1"
