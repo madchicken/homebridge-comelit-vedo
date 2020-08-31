@@ -1,3 +1,4 @@
+[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 [![npm version](https://badge.fury.io/js/homebridge-comelit-vedo-platform.svg)](https://badge.fury.io/js/homebridge-comelit-vedo-platform)
 
 # Comelit VEDO integration for Homebridge
