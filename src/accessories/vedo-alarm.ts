@@ -73,56 +73,59 @@ export class VedoAlarm {
 
   update(alarmAreas: AlarmArea[]) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
-    const currentStatus = this.securityService.getCharacteristic(
-      Characteristic.SecuritySystemCurrentState
-    ).value;
 
     const armedAreas = alarmAreas
       .filter((area: AlarmArea) => area.armed)
       .map(a => a.description.toLowerCase());
     const status = armedAreas.length !== 0;
     this.log.debug(`Alarmed areas`, alarmAreas);
-    const trigger = alarmAreas.reduce(
+    const triggered = alarmAreas.reduce(
       (triggered: boolean, area: AlarmArea) => triggered || area.triggered || area.sabotaged,
       false
     );
-    if (trigger) {
+    if (triggered) {
       this.log.warn(
         `Alarm triggered in area ${alarmAreas.filter(a => a.triggered || a.sabotaged).join(', ')}`
       );
     }
-    if (trigger && currentStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED) {
+    if (
+      triggered &&
+      this.currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
+    ) {
       this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
         .updateValue(Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
-    } else {
-      let newStatus = status
-        ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
-        : Characteristic.SecuritySystemCurrentState.DISARMED;
+      this.currentAlarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+      return;
+    }
 
-      if (status) {
-        if (
-          this.away_areas.length &&
-          intersection(armedAreas, this.away_areas).length === armedAreas.length
-        ) {
-          newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
-        } else if (
-          this.home_areas.length &&
-          intersection(armedAreas, this.home_areas).length === armedAreas.length
-        ) {
-          newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-        } else if (
-          this.night_areas.length &&
-          intersection(armedAreas, this.night_areas).length === armedAreas.length
-        ) {
-          newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-        }
+    let newStatus = status
+      ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
+      : Characteristic.SecuritySystemCurrentState.DISARMED;
+
+    if (status) {
+      if (
+        this.away_areas.length &&
+        intersection(armedAreas, this.away_areas).length === armedAreas.length
+      ) {
+        newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+      } else if (
+        this.home_areas.length &&
+        intersection(armedAreas, this.home_areas).length === armedAreas.length
+      ) {
+        newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+      } else if (
+        this.night_areas.length &&
+        intersection(armedAreas, this.night_areas).length === armedAreas.length
+      ) {
+        newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
       }
 
       this.currentAlarmStatus = newStatus;
-      this.securityService
-        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .updateValue(newStatus);
+      this.securityService.updateCharacteristic(
+        Characteristic.SecuritySystemCurrentState,
+        this.currentAlarmStatus
+      );
     }
   }
 
