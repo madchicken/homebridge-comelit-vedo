@@ -7,14 +7,7 @@ import {
   ZoneStatus,
 } from 'comelit-client';
 import { intersection } from 'lodash';
-import {
-  Callback,
-  CharacteristicEventTypes,
-  CharacteristicGetCallback,
-  Logger,
-  PlatformAccessory,
-  Service,
-} from 'homebridge';
+import { Callback, CharacteristicEventTypes, Logger, PlatformAccessory, Service } from 'homebridge';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 
 const ALL = 32;
@@ -42,7 +35,6 @@ export class VedoAlarm {
   private readonly home_areas: string[];
   private zones: ZoneDesc;
   private areas: AreaDesc;
-  private currentAlarmStatus: number;
 
   constructor(
     platform: ComelitVedoPlatform,
@@ -65,66 +57,108 @@ export class VedoAlarm {
       : [];
     this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
     this.lastLogin = 0;
-    this.currentAlarmStatus =
-      platform.homebridge.hap.Characteristic.SecuritySystemCurrentState.DISARMED; // Default
     this.log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
     this.getAvailableServices();
   }
 
   update(alarmAreas: AlarmArea[]) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
-
+    const currentAlarmStatus = this.securityService.getCharacteristic(
+      Characteristic.SecuritySystemCurrentState
+    ).value;
     const armedAreas = alarmAreas
       .filter((area: AlarmArea) => area.armed)
       .map(a => a.description.toLowerCase());
-    const status = armedAreas.length !== 0;
-    this.log.debug(`Alarmed areas`, alarmAreas);
+    const statusArmed = armedAreas.length !== 0;
+    if (statusArmed) {
+      this.log.debug(`Found ${armedAreas.length} armed areas: ${armedAreas.join(', ')}`);
+    } else {
+      this.log.debug('No armed areas');
+    }
     const triggered = alarmAreas.reduce(
       (triggered: boolean, area: AlarmArea) => triggered || area.triggered || area.sabotaged,
       false
     );
     if (triggered) {
-      this.log.warn(
-        `Alarm triggered in area ${alarmAreas.filter(a => a.triggered || a.sabotaged).join(', ')}`
-      );
+      const s = alarmAreas
+        .filter(a => a.triggered || a.sabotaged)
+        .map(a => a.description)
+        .join(', ');
+      this.log.warn(`Alarm triggered in area ${s}`);
+    } else {
+      this.log.debug('No triggering areas');
     }
     if (
       triggered &&
-      this.currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
+      currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
     ) {
-      this.securityService
-        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .updateValue(Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
-      this.currentAlarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+      this.securityService.updateCharacteristic(
+        Characteristic.SecuritySystemCurrentState,
+        Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
+      );
       return;
     }
 
-    let newStatus = status
-      ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
-      : Characteristic.SecuritySystemCurrentState.DISARMED;
-
-    if (status) {
+    if (statusArmed) {
       if (
         this.away_areas.length &&
         intersection(armedAreas, this.away_areas).length === armedAreas.length
       ) {
-        newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+        this.log.debug('Setting new status to AWAY_ARM');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.AWAY_ARM
+        );
       } else if (
         this.home_areas.length &&
         intersection(armedAreas, this.home_areas).length === armedAreas.length
       ) {
-        newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+        this.log.debug('Setting new status to STAY_ARM');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.STAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.STAY_ARM
+        );
       } else if (
         this.night_areas.length &&
         intersection(armedAreas, this.night_areas).length === armedAreas.length
       ) {
-        newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+        this.log.debug('Setting new status to NIGHT_ARM');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.NIGHT_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.NIGHT_ARM
+        );
+      } else {
+        this.log.debug('Setting new status to AWAY_ARM (default)');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.AWAY_ARM
+        );
       }
-
-      this.currentAlarmStatus = newStatus;
+    } else {
+      this.log.debug('Setting new status to DISARMED');
       this.securityService.updateCharacteristic(
         Characteristic.SecuritySystemCurrentState,
-        this.currentAlarmStatus
+        Characteristic.SecuritySystemCurrentState.DISARMED
+      );
+      this.securityService.updateCharacteristic(
+        Characteristic.SecuritySystemTargetState,
+        Characteristic.SecuritySystemTargetState.DISARM
       );
     }
   }
@@ -203,12 +237,6 @@ export class VedoAlarm {
       this.accessory.addService(Service.SecuritySystem);
     this.securityService.setCharacteristic(Characteristic.Name, 'VEDO Alarm');
 
-    this.securityService
-      .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-      .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
-        callback(null, this.currentAlarmStatus);
-      });
-
     const validValues = [
       Characteristic.SecuritySystemTargetState.DISARM,
       Characteristic.SecuritySystemTargetState.AWAY_ARM,
@@ -222,46 +250,21 @@ export class VedoAlarm {
       validValues.push(Characteristic.SecuritySystemTargetState.STAY_ARM);
     }
 
+    this.securityService.updateCharacteristic(
+      Characteristic.SecuritySystemTargetState,
+      Characteristic.SecuritySystemTargetState.DISARM
+    );
+    this.securityService.updateCharacteristic(
+      Characteristic.SecuritySystemCurrentState,
+      Characteristic.SecuritySystemCurrentState.DISARMED
+    );
+
     this.securityService
       .getCharacteristic(Characteristic.SecuritySystemTargetState)
       .setProps({
         validValues,
       })
-      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) => {
-        try {
-          const uid = await this.client.loginWithRetry(this.code);
-          if (uid) {
-            switch (value) {
-              case Characteristic.SecuritySystemTargetState.DISARM:
-                this.log.info('Disarming system');
-                await this.client.disarm(uid, ALL);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                this.log.info('Arm system: AWAY');
-                await this.armAreas(this.away_areas, uid);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-                this.log.info('Arm system: NIGHT');
-                await this.armAreas(this.night_areas, uid);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.STAY_ARM:
-                this.log.info('Arm system: STAY');
-                await this.armAreas(this.home_areas, uid);
-                callback();
-                break;
-              default:
-                callback(new Error(`Cannot execute requested action ${value}`));
-            }
-          } else {
-            callback(new Error('Cannot login into system'));
-          }
-        } catch (e) {
-          callback(e);
-        }
-      });
+      .on(CharacteristicEventTypes.SET, this.setTargetState);
 
     return [accessoryInformation, this.securityService];
   }
@@ -301,5 +304,42 @@ export class VedoAlarm {
   private getTimeElapsedFromLastLogin() {
     const now = new Date().getTime();
     return now - this.lastLogin;
+  }
+
+  private async setTargetState(value: number, callback: Callback) {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
+    try {
+      const uid = await this.client.loginWithRetry(this.code);
+      if (uid) {
+        switch (value) {
+          case Characteristic.SecuritySystemTargetState.DISARM:
+            this.log.info('Disarming system');
+            await this.client.disarm(uid, ALL);
+            callback();
+            break;
+          case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+            this.log.info('Arm system: AWAY');
+            await this.armAreas(this.away_areas, uid);
+            callback();
+            break;
+          case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+            this.log.info('Arm system: NIGHT');
+            await this.armAreas(this.night_areas, uid);
+            callback();
+            break;
+          case Characteristic.SecuritySystemTargetState.STAY_ARM:
+            this.log.info('Arm system: STAY');
+            await this.armAreas(this.home_areas, uid);
+            callback();
+            break;
+          default:
+            callback(new Error(`Cannot execute requested action ${value}`));
+        }
+      } else {
+        callback(new Error('Cannot login into system'));
+      }
+    } catch (e) {
+      callback(e);
+    }
   }
 }
