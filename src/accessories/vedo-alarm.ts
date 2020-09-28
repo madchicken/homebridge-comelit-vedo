@@ -88,12 +88,11 @@ export class VedoAlarm {
       false
     );
     if (triggered) {
-      this.log.warn(
-        `Alarm triggered in area ${alarmAreas
-          .filter(a => a.triggered || a.sabotaged)
-          .map(a => a.description)
-          .join(', ')}`
-      );
+      const s = alarmAreas
+        .filter(a => a.triggered || a.sabotaged)
+        .map(a => a.description)
+        .join(', ');
+      this.log.warn(`Alarm triggered in area ${s}`);
     } else {
       this.log.debug('No triggering areas');
     }
@@ -212,12 +211,6 @@ export class VedoAlarm {
       this.accessory.addService(Service.SecuritySystem);
     this.securityService.setCharacteristic(Characteristic.Name, 'VEDO Alarm');
 
-    this.securityService
-      .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-      .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
-        callback(null, this.currentAlarmStatus);
-      });
-
     const validValues = [
       Characteristic.SecuritySystemTargetState.DISARM,
       Characteristic.SecuritySystemTargetState.AWAY_ARM,
@@ -231,46 +224,21 @@ export class VedoAlarm {
       validValues.push(Characteristic.SecuritySystemTargetState.STAY_ARM);
     }
 
+    this.securityService.updateCharacteristic(
+      Characteristic.SecuritySystemTargetState,
+      Characteristic.SecuritySystemTargetState.DISARM
+    );
+    this.securityService.updateCharacteristic(
+      Characteristic.SecuritySystemCurrentState,
+      Characteristic.SecuritySystemCurrentState.DISARMED
+    );
+
     this.securityService
       .getCharacteristic(Characteristic.SecuritySystemTargetState)
       .setProps({
         validValues,
       })
-      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) => {
-        try {
-          const uid = await this.client.loginWithRetry(this.code);
-          if (uid) {
-            switch (value) {
-              case Characteristic.SecuritySystemTargetState.DISARM:
-                this.log.info('Disarming system');
-                await this.client.disarm(uid, ALL);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                this.log.info('Arm system: AWAY');
-                await this.armAreas(this.away_areas, uid);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-                this.log.info('Arm system: NIGHT');
-                await this.armAreas(this.night_areas, uid);
-                callback();
-                break;
-              case Characteristic.SecuritySystemTargetState.STAY_ARM:
-                this.log.info('Arm system: STAY');
-                await this.armAreas(this.home_areas, uid);
-                callback();
-                break;
-              default:
-                callback(new Error(`Cannot execute requested action ${value}`));
-            }
-          } else {
-            callback(new Error('Cannot login into system'));
-          }
-        } catch (e) {
-          callback(e);
-        }
-      });
+      .on(CharacteristicEventTypes.SET, this.setTargetState);
 
     return [accessoryInformation, this.securityService];
   }
@@ -310,5 +278,42 @@ export class VedoAlarm {
   private getTimeElapsedFromLastLogin() {
     const now = new Date().getTime();
     return now - this.lastLogin;
+  }
+
+  private async setTargetState(value: number, callback: Callback) {
+    const Characteristic = this.platform.homebridge.hap.Characteristic;
+    try {
+      const uid = await this.client.loginWithRetry(this.code);
+      if (uid) {
+        switch (value) {
+          case Characteristic.SecuritySystemTargetState.DISARM:
+            this.log.info('Disarming system');
+            await this.client.disarm(uid, ALL);
+            callback();
+            break;
+          case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+            this.log.info('Arm system: AWAY');
+            await this.armAreas(this.away_areas, uid);
+            callback();
+            break;
+          case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+            this.log.info('Arm system: NIGHT');
+            await this.armAreas(this.night_areas, uid);
+            callback();
+            break;
+          case Characteristic.SecuritySystemTargetState.STAY_ARM:
+            this.log.info('Arm system: STAY');
+            await this.armAreas(this.home_areas, uid);
+            callback();
+            break;
+          default:
+            callback(new Error(`Cannot execute requested action ${value}`));
+        }
+      } else {
+        callback(new Error('Cannot login into system'));
+      }
+    } catch (e) {
+      callback(e);
+    }
   }
 }
