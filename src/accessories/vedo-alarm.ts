@@ -77,33 +77,37 @@ export class VedoAlarm {
     const armedAreas = alarmAreas
       .filter((area: AlarmArea) => area.armed)
       .map(a => a.description.toLowerCase());
-    const status = armedAreas.length !== 0;
-    this.log.debug(`Alarmed areas`, alarmAreas);
+    const statusArmed = armedAreas.length !== 0;
+    this.log.debug(`Armed areas`, armedAreas);
     const triggered = alarmAreas.reduce(
       (triggered: boolean, area: AlarmArea) => triggered || area.triggered || area.sabotaged,
       false
     );
     if (triggered) {
       this.log.warn(
-        `Alarm triggered in area ${alarmAreas.filter(a => a.triggered || a.sabotaged).join(', ')}`
+        `Alarm triggered in area ${alarmAreas
+          .filter(a => a.triggered || a.sabotaged)
+          .map(a => a.description)
+          .join(', ')}`
       );
     }
     if (
       triggered &&
       this.currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
     ) {
-      this.securityService
-        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .updateValue(Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);
+      this.securityService.updateCharacteristic(
+        Characteristic.SecuritySystemCurrentState,
+        Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
+      );
       this.currentAlarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
       return;
     }
 
-    let newStatus = status
+    let newStatus = statusArmed
       ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
       : Characteristic.SecuritySystemCurrentState.DISARMED;
 
-    if (status) {
+    if (statusArmed) {
       if (
         this.away_areas.length &&
         intersection(armedAreas, this.away_areas).length === armedAreas.length
@@ -122,11 +126,11 @@ export class VedoAlarm {
       }
 
       this.currentAlarmStatus = newStatus;
-      this.securityService.updateCharacteristic(
-        Characteristic.SecuritySystemCurrentState,
-        this.currentAlarmStatus
-      );
     }
+    this.securityService.updateCharacteristic(
+      Characteristic.SecuritySystemCurrentState,
+      this.currentAlarmStatus
+    );
   }
 
   async fetchZones(): Promise<ZoneStatus[]> {
