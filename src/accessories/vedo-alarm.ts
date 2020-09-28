@@ -35,7 +35,6 @@ export class VedoAlarm {
   private readonly home_areas: string[];
   private zones: ZoneDesc;
   private areas: AreaDesc;
-  private currentAlarmStatus: number;
 
   constructor(
     platform: ComelitVedoPlatform,
@@ -58,21 +57,21 @@ export class VedoAlarm {
       : [];
     this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
     this.lastLogin = 0;
-    this.currentAlarmStatus =
-      platform.homebridge.hap.Characteristic.SecuritySystemCurrentState.DISARMED; // Default
     this.log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
     this.getAvailableServices();
   }
 
   update(alarmAreas: AlarmArea[]) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
-
+    const currentAlarmStatus = this.securityService.getCharacteristic(
+      Characteristic.SecuritySystemCurrentState
+    ).value;
     const armedAreas = alarmAreas
       .filter((area: AlarmArea) => area.armed)
       .map(a => a.description.toLowerCase());
     const statusArmed = armedAreas.length !== 0;
     if (statusArmed) {
-      this.log.debug(`Armed areas ${armedAreas.join(', ')}`);
+      this.log.debug(`Found ${armedAreas.length} armed areas: ${armedAreas.join(', ')}`);
     } else {
       this.log.debug('No armed areas');
     }
@@ -91,13 +90,12 @@ export class VedoAlarm {
     }
     if (
       triggered &&
-      this.currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
+      currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
     ) {
       this.securityService.updateCharacteristic(
         Characteristic.SecuritySystemCurrentState,
         Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
       );
-      this.currentAlarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
       return;
     }
 
@@ -110,24 +108,23 @@ export class VedoAlarm {
         this.away_areas.length &&
         intersection(armedAreas, this.away_areas).length === armedAreas.length
       ) {
+        this.log.debug('Setting new status to AWAY_ARM');
         newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
       } else if (
         this.home_areas.length &&
         intersection(armedAreas, this.home_areas).length === armedAreas.length
       ) {
+        this.log.debug('Setting new status to STAY_ARM');
         newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
       } else if (
         this.night_areas.length &&
         intersection(armedAreas, this.night_areas).length === armedAreas.length
       ) {
+        this.log.debug('Setting new status to NIGHT_ARM');
         newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
       }
     }
-    this.currentAlarmStatus = newStatus;
-    this.securityService.updateCharacteristic(
-      Characteristic.SecuritySystemCurrentState,
-      this.currentAlarmStatus
-    );
+    this.securityService.updateCharacteristic(Characteristic.SecuritySystemCurrentState, newStatus);
   }
 
   async fetchZones(): Promise<ZoneStatus[]> {
