@@ -7,14 +7,7 @@ import {
   ZoneStatus,
 } from 'comelit-client';
 import { intersection } from 'lodash';
-import {
-  Callback,
-  CharacteristicEventTypes,
-  CharacteristicGetCallback,
-  Logger,
-  PlatformAccessory,
-  Service,
-} from 'homebridge';
+import { Callback, CharacteristicEventTypes, Logger, PlatformAccessory, Service } from 'homebridge';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 
 const ALL = 32;
