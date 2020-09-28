@@ -78,7 +78,11 @@ export class VedoAlarm {
       .filter((area: AlarmArea) => area.armed)
       .map(a => a.description.toLowerCase());
     const statusArmed = armedAreas.length !== 0;
-    this.log.debug(`Armed areas`, armedAreas);
+    if (statusArmed) {
+      this.log.debug(`Armed areas ${armedAreas.join(', ')}`);
+    } else {
+      this.log.debug('No armed areas');
+    }
     const triggered = alarmAreas.reduce(
       (triggered: boolean, area: AlarmArea) => triggered || area.triggered || area.sabotaged,
       false
@@ -90,6 +94,8 @@ export class VedoAlarm {
           .map(a => a.description)
           .join(', ')}`
       );
+    } else {
+      this.log.debug('No triggering areas');
     }
     if (
       triggered &&
@@ -124,9 +130,8 @@ export class VedoAlarm {
       ) {
         newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
       }
-
-      this.currentAlarmStatus = newStatus;
     }
+    this.currentAlarmStatus = newStatus;
     this.securityService.updateCharacteristic(
       Characteristic.SecuritySystemCurrentState,
       this.currentAlarmStatus
