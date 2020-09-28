@@ -99,32 +99,68 @@ export class VedoAlarm {
       return;
     }
 
-    let newStatus = statusArmed
-      ? Characteristic.SecuritySystemCurrentState.AWAY_ARM
-      : Characteristic.SecuritySystemCurrentState.DISARMED;
-
     if (statusArmed) {
       if (
         this.away_areas.length &&
         intersection(armedAreas, this.away_areas).length === armedAreas.length
       ) {
         this.log.debug('Setting new status to AWAY_ARM');
-        newStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.AWAY_ARM
+        );
       } else if (
         this.home_areas.length &&
         intersection(armedAreas, this.home_areas).length === armedAreas.length
       ) {
         this.log.debug('Setting new status to STAY_ARM');
-        newStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.STAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.STAY_ARM
+        );
       } else if (
         this.night_areas.length &&
         intersection(armedAreas, this.night_areas).length === armedAreas.length
       ) {
         this.log.debug('Setting new status to NIGHT_ARM');
-        newStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.NIGHT_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.NIGHT_ARM
+        );
+      } else {
+        this.log.debug('Setting new status to AWAY_ARM (default)');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.AWAY_ARM
+        );
       }
+    } else {
+      this.log.debug('Setting new status to DISARMED');
+      this.securityService.updateCharacteristic(
+        Characteristic.SecuritySystemCurrentState,
+        Characteristic.SecuritySystemCurrentState.DISARMED
+      );
+      this.securityService.updateCharacteristic(
+        Characteristic.SecuritySystemTargetState,
+        Characteristic.SecuritySystemTargetState.DISARM
+      );
     }
-    this.securityService.updateCharacteristic(Characteristic.SecuritySystemCurrentState, newStatus);
   }
 
   async fetchZones(): Promise<ZoneStatus[]> {
