@@ -264,7 +264,9 @@ export class VedoAlarm {
       .setProps({
         validValues,
       })
-      .on(CharacteristicEventTypes.SET, this.setTargetState);
+      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) =>
+        this.setTargetState(value, callback)
+      );
 
     return [accessoryInformation, this.securityService];
   }
