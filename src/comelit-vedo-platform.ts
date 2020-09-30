@@ -218,7 +218,9 @@ export class ComelitVedoPlatform implements DynamicPlatformPlugin {
         const zones = await this.alarm.fetchZones();
         if (zones && zones.length) {
           this.mappedZones = zones.map(zone => {
-            const sensorAccessory = this.createHapAccessory(zone.description, Categories.SENSOR);
+            const name = `${zone.description}-${zone.index}`;
+            this.log.info(`Mapping sensor with ID ${name}`);
+            const sensorAccessory = this.createHapAccessory(name, Categories.SENSOR);
             return new VedoSensor(this, sensorAccessory, zone.description, zone, this.alarm);
           });
         }
@@ -236,9 +238,9 @@ export class ComelitVedoPlatform implements DynamicPlatformPlugin {
     const existingAccessory = this.accessories.get(uuid);
     const accessory = existingAccessory || new PlatformAccessory(name, uuid, category);
     if (existingAccessory) {
-      this.log.debug(`Reuse accessory from cache with uuid ${uuid}`);
+      this.log.info(`Reuse accessory from cache with uuid ${uuid}`);
     } else {
-      this.log.debug(`Registering new accessory with uuid ${uuid}`);
+      this.log.info(`Registering new accessory with uuid ${uuid}`);
       this.homebridge.registerPlatformAccessories(PLUGIN_IDENTIFIER, PLATFORM_NAME, [accessory]);
     }
     return accessory;
