@@ -37,13 +37,10 @@ export class VedoSensor {
 
   update(zoneStatus: ZoneStatus) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
-    const currentValue = this.sensorService.getCharacteristic(Characteristic.OccupancyDetected)
-      .value;
-    const newValue = zoneStatus.open
-      ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
-      : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED;
+    const currentValue = this.sensorService.getCharacteristic(Characteristic.MotionDetected).value;
+    const newValue = zoneStatus.open;
     if (currentValue !== newValue) {
-      if (newValue === Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
+      if (newValue) {
         this.log.debug(`Occupancy detected for sensor ${this.name}`);
         triggers_count.inc();
       }
@@ -68,8 +65,8 @@ export class VedoSensor {
       .setCharacteristic(Characteristic.SerialNumber, 'None');
 
     this.sensorService =
-      this.accessory.getService(Service.OccupancySensor) ||
-      this.accessory.addService(Service.OccupancySensor);
+      this.accessory.getService(Service.MotionSensor) ||
+      this.accessory.addService(Service.MotionSensor);
     this.sensorService.setCharacteristic(Characteristic.Name, this.name);
 
     this.update(this.zoneStatus);
