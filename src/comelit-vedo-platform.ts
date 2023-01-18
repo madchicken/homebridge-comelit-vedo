@@ -24,6 +24,7 @@ export interface VedoPlatformConfig extends PlatformConfig {
   update_interval?: number;
   export_prometheus_metrics?: boolean;
   exporter_http_port?: number;
+  always_on_areas?: string[];
   area_mapping: {
     away_areas?: string[];
     night_areas?: string[];
