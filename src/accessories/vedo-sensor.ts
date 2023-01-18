@@ -1,5 +1,12 @@
 import { ZoneStatus } from 'comelit-client';
-import { Callback, CharacteristicEventTypes, Logger, PlatformAccessory, Service } from 'homebridge';
+import {
+  CharacteristicSetCallback,
+  CharacteristicGetCallback,
+  CharacteristicEventTypes,
+  Logger,
+  PlatformAccessory,
+  Service,
+} from 'homebridge';
 import client from 'prom-client';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 import { VedoAlarm } from './vedo-alarm';
@@ -79,19 +86,22 @@ export class VedoSensor {
 
     this.switchService
       .getCharacteristic(Characteristic.On)
-      .on(CharacteristicEventTypes.SET, async (value: boolean, callback: Callback) => {
-        try {
-          if (value) {
-            await this.alarm.includeZone(this.zoneStatus.index);
-          } else {
-            await this.alarm.excludeZone(this.zoneStatus.index);
+      .on(
+        CharacteristicEventTypes.SET,
+        async (value: boolean, callback: CharacteristicSetCallback) => {
+          try {
+            if (value) {
+              await this.alarm.includeZone(this.zoneStatus.index);
+            } else {
+              await this.alarm.excludeZone(this.zoneStatus.index);
+            }
+            return callback();
+          } catch (e) {
+            callback(e);
           }
-          return callback();
-        } catch (e) {
-          callback(e);
         }
-      })
-      .on(CharacteristicEventTypes.GET, (callback: Callback) => {
+      )
+      .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
         return callback(null, this.zoneStatus.excluded === false);
       });
 

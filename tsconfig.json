@@ -17,7 +17,8 @@
     // Allow fancy language features.
     "downlevelIteration": true,
     "outDir": "dist",
-    "sourceMap": true
+    "sourceMap": true,
+    "skipLibCheck": true
   },
   "lib": ["esnext"],
   "include": ["src", "types.d.ts"]

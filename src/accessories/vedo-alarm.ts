@@ -7,7 +7,13 @@ import {
   ZoneStatus,
 } from 'comelit-client';
 import { intersection } from 'lodash';
-import { Callback, CharacteristicEventTypes, Logger, PlatformAccessory, Service } from 'homebridge';
+import {
+  CharacteristicSetCallback,
+  CharacteristicEventTypes,
+  Logger,
+  PlatformAccessory,
+  Service,
+} from 'homebridge';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
 import { difference } from 'lodash';
 
@@ -271,8 +277,10 @@ export class VedoAlarm {
       .setProps({
         validValues,
       })
-      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) =>
-        this.setTargetState(value, callback)
+      .on(
+        CharacteristicEventTypes.SET,
+        async (value: number, callback: CharacteristicSetCallback) =>
+          this.setTargetState(value, callback)
       );
 
     return [accessoryInformation, this.securityService];
@@ -315,7 +323,7 @@ export class VedoAlarm {
     return now - this.lastLogin;
   }
 
-  private async setTargetState(value: number, callback: Callback) {
+  private async setTargetState(value: number, callback: CharacteristicSetCallback) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
     try {
       const uid = await this.client.loginWithRetry(this.code);
