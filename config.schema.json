@@ -75,6 +75,14 @@
               "title": "Area name",
               "type": "string"
             }
+          },
+          "always_on_areas": {
+            "title": "Always ON areas",
+            "type": "array",
+            "items": {
+              "title": "Area name",
+              "type": "string"
+            }
           }
         }
       },
@@ -244,6 +252,32 @@
               "items": [
                 {
                   "key": "area_mapping.home_areas[]",
+                  "flex": "1 1 50px",
+                  "notitle": true,
+                  "placeholder": "Enter area name..."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "help",
+          "helpvalue": "<h6>Always ON Area Mapping</h6><em class='primary-text'>Enter the area names that are always ON in your system (leave this empty if you don't know)</em>"
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.always_on_areas",
+          "type": "array",
+          "orderable": false,
+          "items": [
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "items": [
+                {
+                  "key": "area_mapping.always_on_areas[]",
                   "flex": "1 1 50px",
                   "notitle": true,
                   "placeholder": "Enter area name..."

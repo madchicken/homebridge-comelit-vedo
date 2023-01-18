@@ -7,8 +7,15 @@ import {
   ZoneStatus,
 } from 'comelit-client';
 import { intersection } from 'lodash';
-import { Callback, CharacteristicEventTypes, Logger, PlatformAccessory, Service } from 'homebridge';
+import {
+  CharacteristicSetCallback,
+  CharacteristicEventTypes,
+  Logger,
+  PlatformAccessory,
+  Service,
+} from 'homebridge';
 import { ComelitVedoPlatform } from '../comelit-vedo-platform';
+import { difference } from 'lodash';
 
 const ALL = 32;
 
@@ -33,6 +40,7 @@ export class VedoAlarm {
   private readonly away_areas: string[];
   private readonly night_areas: string[];
   private readonly home_areas: string[];
+  private readonly alwaysOnAreas: string[];
   private zones: ZoneDesc;
   private areas: AreaDesc;
 
@@ -56,6 +64,9 @@ export class VedoAlarm {
       ? config.night_areas.map(a => a.toLowerCase().trim())
       : [];
     this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
+    this.alwaysOnAreas = platform.config.always_on_areas
+      ? platform.config.always_on_areas.map(a => a.toLowerCase().trim())
+      : [];
     this.lastLogin = 0;
     this.log.debug('Mapping areas set to ', this.night_areas, this.away_areas, this.home_areas);
     this.getAvailableServices();
@@ -66,9 +77,11 @@ export class VedoAlarm {
     const currentAlarmStatus = this.securityService.getCharacteristic(
       Characteristic.SecuritySystemCurrentState
     ).value;
-    const armedAreas = alarmAreas
-      .filter((area: AlarmArea) => area.armed)
-      .map(a => a.description.toLowerCase());
+    // remove always-on areas from the check
+    const armedAreas = difference(
+      alarmAreas.filter((area: AlarmArea) => area.armed).map(a => a.description.toLowerCase()),
+      this.alwaysOnAreas
+    ); // alwaysOnAreas should be an empty array if not set
     const statusArmed = armedAreas.length !== 0;
     if (statusArmed) {
       this.log.debug(`Found ${armedAreas.length} armed areas: ${armedAreas.join(', ')}`);
@@ -264,8 +277,10 @@ export class VedoAlarm {
       .setProps({
         validValues,
       })
-      .on(CharacteristicEventTypes.SET, async (value: number, callback: Callback) =>
-        this.setTargetState(value, callback)
+      .on(
+        CharacteristicEventTypes.SET,
+        async (value: number, callback: CharacteristicSetCallback) =>
+          this.setTargetState(value, callback)
       );
 
     return [accessoryInformation, this.securityService];
@@ -308,7 +323,7 @@ export class VedoAlarm {
     return now - this.lastLogin;
   }
 
-  private async setTargetState(value: number, callback: Callback) {
+  private async setTargetState(value: number, callback: CharacteristicSetCallback) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
     try {
       const uid = await this.client.loginWithRetry(this.code);

@@ -62,9 +62,43 @@ A possible alternative configuration for Vedo without an IP could be:
 }
 ```
 
+You can also configure areas to match Home App states (Home, Night and Away) and always-on areas:
+
+```json
+{
+  "platform": "ComelitVedo",
+  "alarm_address": "192.168.1.2",
+  "alarm_port": 80,
+  "alarm_code": "12345678",
+  "update_interval": 2,
+  "map_sensors": true,
+  "area_mapping": {
+    "away_areas": ["AREA_1"],
+    "home_areas": ["AREA_2"],
+    "night_areas": ["AREA_3"],
+    "always_on_areas": ["AREA_ALWAYS_TRIGGERED"]
+  },
+  "advanced": {
+    "login": "/login.cgi",
+    "login_info": "/login.json",
+    "area_desc": "/user/vedo_area_desc.json",
+    "area_stat": "/user/vedo_area_stat.json",
+    "zone_desc": "/user/vedo_zone_desc.json",
+    "zone_stat": "/user/vedo_zone_stat.json",
+    "action": "/user/action.cgi",
+    "code_param": "alm"
+  }
+}
+```
+
+If you don't provide any value for night and home areas you will only be able to switch your alarm on and off from the Home App.
+
+Note: in always_on_areas you can provide one or more areas that are always in trigger mode (some systems have them configured). Areas in this array won't be checked, so please do not add any area here if you don't know what you are doing.
+
 ## Version History
 
-1.0.0 - Initial version
+- 1.0.0 - Initial version
+- 1.1.0 - Add the possibility to specify an array of "ALWAYS ON" areas: these areas won't be checked if active.
 
 ## Screenshots
 
