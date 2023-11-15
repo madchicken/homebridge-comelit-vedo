@@ -92,7 +92,7 @@ export class VedoAlarm {
       (triggered: boolean, area: AlarmArea) => triggered || area.triggered || area.sabotaged,
       false
     );
-    if (triggered) {
+    if (statusArmed && triggered) {
       const s = alarmAreas
         .filter(a => a.triggered || a.sabotaged)
         .map(a => a.description)
