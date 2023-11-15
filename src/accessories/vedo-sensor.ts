@@ -57,7 +57,6 @@ export class VedoSensor {
       this.sensorService.getCharacteristic(Characteristic.OccupancyDetected).updateValue(newValue);
     }
 
-    this.sensorService.updateCharacteristic(Characteristic.Active, !zoneStatus.excluded);
     Object.assign(this.zoneStatus, zoneStatus);
   }
 
