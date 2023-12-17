@@ -54,26 +54,56 @@
         "properties": {
           "away_areas": {
             "title": "Away area",
-            "type": "array",
-            "items": {
-              "title": "Area name",
-              "type": "string"
+            "type": "object",
+            "properties": {
+              "areas": {
+                "title": "Areas",
+                "type": "array",
+                "items": {
+                  "title": "Area name",
+                  "type": "string"
+                }
+              },
+              "shortcut": {
+                "title": "Shortcut",
+                "type": "string"
+              }
             }
           },
           "home_areas": {
             "title": "Home area",
-            "type": "array",
-            "items": {
-              "title": "Area name",
-              "type": "string"
+            "type": "object",
+            "properties": {
+              "areas": {
+                "title": "Areas",
+                "type": "array",
+                "items": {
+                  "title": "Area name",
+                  "type": "string"
+                }
+              },
+              "shortcut": {
+                "title": "Shortcut",
+                "type": "string"
+              }
             }
           },
           "night_areas": {
             "title": "Night area",
-            "type": "array",
-            "items": {
-              "title": "Area name",
-              "type": "string"
+            "type": "object",
+            "properties": {
+              "areas": {
+                "title": "Areas",
+                "type": "array",
+                "items": {
+                  "title": "Area name",
+                  "type": "string"
+                }
+              },
+              "shortcut": {
+                "title": "Shortcut",
+                "type": "string"
+              }
             }
           },
           "always_on_areas": {

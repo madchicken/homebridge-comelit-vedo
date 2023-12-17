@@ -1,5 +1,5 @@
-import { sleep, VedoClientConfig } from 'comelit-client';
-import { VedoAlarm, VedoAlarmConfig } from './accessories/vedo-alarm';
+import { sleep, VedoClientConfig } from '@alessandrofilino/comelit-client';
+import { ExtendedAreas, VedoAlarm, VedoAlarmConfig } from './accessories/vedo-alarm';
 import { VedoSensor } from './accessories/vedo-sensor';
 import express, { Express } from 'express';
 import client, { register } from 'prom-client';
@@ -26,9 +26,9 @@ export interface VedoPlatformConfig extends PlatformConfig {
   exporter_http_port?: number;
   always_on_areas?: string[];
   area_mapping: {
-    away_areas?: string[];
-    night_areas?: string[];
-    home_areas?: string[];
+    away_areas?: ExtendedAreas;
+    night_areas?: ExtendedAreas;
+    home_areas?: ExtendedAreas;
   };
   advanced?: VedoClientConfig;
 }
@@ -202,9 +202,9 @@ export class ComelitVedoPlatform implements DynamicPlatformPlugin {
       const area_mapping = this.config.area_mapping || {};
       const config: VedoAlarmConfig = {
         ...advanced,
-        away_areas: area_mapping.away_areas ? [...area_mapping.away_areas] : [],
-        home_areas: area_mapping.home_areas ? [...area_mapping.home_areas] : [],
-        night_areas: area_mapping.night_areas ? [...area_mapping.night_areas] : [],
+        away_areas: area_mapping.away_areas ? area_mapping.away_areas : { areas: [] },
+        home_areas: area_mapping.home_areas ? area_mapping.home_areas : { areas: [] },
+        night_areas: area_mapping.night_areas ? area_mapping.night_areas : { areas: [] },
       };
       const accessory = this.createHapAccessory('VEDO Alarm', Categories.SECURITY_SYSTEM);
       this.alarm = new VedoAlarm(

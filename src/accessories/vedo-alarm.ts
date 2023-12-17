@@ -5,7 +5,7 @@ import {
   VedoClientConfig,
   ZoneDesc,
   ZoneStatus,
-} from 'comelit-client';
+} from '@alessandrofilino/comelit-client';
 import { intersection } from 'lodash';
 import {
   CharacteristicSetCallback,
@@ -19,10 +19,15 @@ import { difference } from 'lodash';
 
 const ALL = 32;
 
+export interface ExtendedAreas {
+  areas: string[];
+  shortcut?: string;
+}
+
 export interface VedoAlarmConfig extends Partial<VedoClientConfig> {
-  away_areas?: string[];
-  night_areas?: string[];
-  home_areas?: string[];
+  away_areas?: ExtendedAreas;
+  night_areas?: ExtendedAreas;
+  home_areas?: ExtendedAreas;
 }
 
 const DEFAULT_LOGIN_TIMEOUT = 15000;
@@ -37,9 +42,9 @@ export class VedoAlarm {
   private securityService: Service;
   private lastUID: string;
   private lastLogin: number;
-  private readonly away_areas: string[];
-  private readonly night_areas: string[];
-  private readonly home_areas: string[];
+  private readonly away_areas: ExtendedAreas;
+  private readonly night_areas: ExtendedAreas;
+  private readonly home_areas: ExtendedAreas;
   private readonly alwaysOnAreas: string[];
   private zones: ZoneDesc;
   private areas: AreaDesc;
@@ -59,11 +64,18 @@ export class VedoAlarm {
     this.name = 'VEDO Alarm @ ' + address;
     this.client = new VedoClient(address, port, config);
     this.client.setLogger(platform.log);
-    this.away_areas = config.away_areas ? config.away_areas.map(a => a.toLowerCase().trim()) : [];
-    this.night_areas = config.night_areas
-      ? config.night_areas.map(a => a.toLowerCase().trim())
+    this.away_areas.areas = config.away_areas.areas
+      ? config.away_areas.areas.map(a => a.toLowerCase().trim())
       : [];
-    this.home_areas = config.home_areas ? config.home_areas.map(a => a.toLowerCase().trim()) : [];
+    this.away_areas.shortcut = config.away_areas.shortcut;
+    this.night_areas.areas = config.night_areas.areas
+      ? config.night_areas.areas.map(a => a.toLowerCase().trim())
+      : [];
+    this.night_areas.shortcut = config.night_areas.shortcut;
+    this.home_areas.areas = config.home_areas.areas
+      ? config.home_areas.areas.map(a => a.toLowerCase().trim())
+      : [];
+    this.home_areas.shortcut = config.home_areas.shortcut;
     this.alwaysOnAreas = platform.config.always_on_areas
       ? platform.config.always_on_areas.map(a => a.toLowerCase().trim())
       : [];
@@ -114,8 +126,8 @@ export class VedoAlarm {
 
     if (statusArmed) {
       if (
-        this.away_areas.length &&
-        intersection(armedAreas, this.away_areas).length === armedAreas.length
+        this.away_areas.areas.length &&
+        intersection(armedAreas, this.away_areas.areas).length === armedAreas.length
       ) {
         this.log.debug('Setting new status to AWAY_ARM');
         this.securityService.updateCharacteristic(
@@ -127,8 +139,8 @@ export class VedoAlarm {
           Characteristic.SecuritySystemTargetState.AWAY_ARM
         );
       } else if (
-        this.home_areas.length &&
-        intersection(armedAreas, this.home_areas).length === armedAreas.length
+        this.home_areas.areas.length &&
+        intersection(armedAreas, this.home_areas.areas).length === armedAreas.length
       ) {
         this.log.debug('Setting new status to STAY_ARM');
         this.securityService.updateCharacteristic(
@@ -140,8 +152,8 @@ export class VedoAlarm {
           Characteristic.SecuritySystemTargetState.STAY_ARM
         );
       } else if (
-        this.night_areas.length &&
-        intersection(armedAreas, this.night_areas).length === armedAreas.length
+        this.night_areas.areas.length &&
+        intersection(armedAreas, this.night_areas.areas).length === armedAreas.length
       ) {
         this.log.debug('Setting new status to NIGHT_ARM');
         this.securityService.updateCharacteristic(
@@ -255,11 +267,11 @@ export class VedoAlarm {
       Characteristic.SecuritySystemTargetState.AWAY_ARM,
     ];
 
-    if (this.night_areas.length) {
+    if (this.night_areas.areas.length) {
       validValues.push(Characteristic.SecuritySystemTargetState.NIGHT_ARM);
     }
 
-    if (this.home_areas.length) {
+    if (this.home_areas.areas.length) {
       validValues.push(Characteristic.SecuritySystemTargetState.STAY_ARM);
     }
 
@@ -286,7 +298,7 @@ export class VedoAlarm {
     return [accessoryInformation, this.securityService];
   }
 
-  private async armAreas(areas: string[], uid: string): Promise<number[]> {
+  private async armAreas(areas: string[], uid: string, shortcut?: string): Promise<number[]> {
     this.log.info(`Arming system: ${areas.length ? areas.join(', ') : 'ALL SYSTEM'}`);
     const alarmAreas = await this.client.findActiveAreas(uid);
     if (areas && areas.length) {
@@ -294,7 +306,7 @@ export class VedoAlarm {
         .map(area => alarmAreas.findIndex(a => a.description.toLowerCase() === area))
         .filter(index => index !== -1);
       if (indexes.length) {
-        const promises = indexes.map(index => this.client.arm(uid, index));
+        const promises = indexes.map(index => this.client.arm(uid, index, true, shortcut));
         await Promise.all(promises);
         return indexes;
       }
@@ -336,17 +348,17 @@ export class VedoAlarm {
             break;
           case Characteristic.SecuritySystemTargetState.AWAY_ARM:
             this.log.info('Arm system: AWAY');
-            await this.armAreas(this.away_areas, uid);
+            await this.armAreas(this.away_areas.areas, uid, this.away_areas.shortcut);
             callback();
             break;
           case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
             this.log.info('Arm system: NIGHT');
-            await this.armAreas(this.night_areas, uid);
+            await this.armAreas(this.night_areas.areas, uid, this.night_areas.shortcut);
             callback();
             break;
           case Characteristic.SecuritySystemTargetState.STAY_ARM:
             this.log.info('Arm system: STAY');
-            await this.armAreas(this.home_areas, uid);
+            await this.armAreas(this.home_areas.areas, uid, this.home_areas.shortcut);
             callback();
             break;
           default:
