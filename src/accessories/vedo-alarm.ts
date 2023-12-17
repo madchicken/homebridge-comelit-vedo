@@ -20,7 +20,7 @@ import { difference } from 'lodash';
 const ALL = 32;
 
 export interface ExtendedAreas {
-  areas: string[];
+  areas?: string[];
   shortcut?: string;
 }
 
@@ -64,18 +64,27 @@ export class VedoAlarm {
     this.name = 'VEDO Alarm @ ' + address;
     this.client = new VedoClient(address, port, config);
     this.client.setLogger(platform.log);
-    this.away_areas.areas = config.away_areas.areas
-      ? config.away_areas.areas.map(a => a.toLowerCase().trim())
-      : [];
-    this.away_areas.shortcut = config.away_areas.shortcut;
-    this.night_areas.areas = config.night_areas.areas
-      ? config.night_areas.areas.map(a => a.toLowerCase().trim())
-      : [];
-    this.night_areas.shortcut = config.night_areas.shortcut;
-    this.home_areas.areas = config.home_areas.areas
-      ? config.home_areas.areas.map(a => a.toLowerCase().trim())
-      : [];
-    this.home_areas.shortcut = config.home_areas.shortcut;
+    this.away_areas = {
+      areas:
+        config.away_areas && config.away_areas.areas
+          ? config.away_areas.areas.map(a => a.toLowerCase().trim())
+          : [],
+      shortcut: config.away_areas ? config.away_areas.shortcut : null,
+    };
+    this.night_areas = {
+      areas:
+        config.night_areas && config.night_areas.areas
+          ? config.night_areas.areas.map(a => a.toLowerCase().trim())
+          : [],
+      shortcut: config.night_areas ? config.night_areas.shortcut : null,
+    };
+    this.home_areas = {
+      areas:
+        config.home_areas && config.home_areas.areas
+          ? config.home_areas.areas.map(a => a.toLowerCase().trim())
+          : [],
+      shortcut: config.home_areas ? config.home_areas.shortcut : null,
+    };
     this.alwaysOnAreas = platform.config.always_on_areas
       ? platform.config.always_on_areas.map(a => a.toLowerCase().trim())
       : [];

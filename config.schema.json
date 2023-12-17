@@ -219,7 +219,7 @@
         {
           "nodescription": true,
           "notitle": true,
-          "key": "area_mapping.away_areas",
+          "key": "area_mapping.away_areas.areas",
           "type": "array",
           "orderable": false,
           "items": [
@@ -229,7 +229,7 @@
               "flex-direction": "row",
               "items": [
                 {
-                  "key": "area_mapping.away_areas[]",
+                  "key": "area_mapping.away_areas.areas[]",
                   "flex": "1 1 50px",
                   "notitle": true,
                   "placeholder": "Enter area name..."
@@ -237,6 +237,14 @@
               ]
             }
           ]
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.away_areas.shortcut",
+          "type": "string",
+          "orderable": false,
+          "placeholder": "Enter shortcut..."
         },
         {
           "type": "help",
@@ -245,7 +253,7 @@
         {
           "nodescription": true,
           "notitle": true,
-          "key": "area_mapping.night_areas",
+          "key": "area_mapping.night_areas.areas",
           "type": "array",
           "orderable": false,
           "items": [
@@ -255,7 +263,7 @@
               "flex-direction": "row",
               "items": [
                 {
-                  "key": "area_mapping.night_areas[]",
+                  "key": "area_mapping.night_areas.areas[]",
                   "flex": "1 1 50px",
                   "notitle": true,
                   "placeholder": "Enter area name..."
@@ -263,6 +271,14 @@
               ]
             }
           ]
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.night_areas.shortcut",
+          "type": "string",
+          "orderable": false,
+          "placeholder": "Enter shortcut..."
         },
         {
           "type": "help",
@@ -271,7 +287,7 @@
         {
           "nodescription": true,
           "notitle": true,
-          "key": "area_mapping.home_areas",
+          "key": "area_mapping.home_areas.areas",
           "type": "array",
           "orderable": false,
           "items": [
@@ -281,7 +297,7 @@
               "flex-direction": "row",
               "items": [
                 {
-                  "key": "area_mapping.home_areas[]",
+                  "key": "area_mapping.home_areas.areas[]",
                   "flex": "1 1 50px",
                   "notitle": true,
                   "placeholder": "Enter area name..."
@@ -289,6 +305,14 @@
               ]
             }
           ]
+        },
+        {
+          "nodescription": true,
+          "notitle": true,
+          "key": "area_mapping.home_areas.shortcut",
+          "type": "string",
+          "orderable": false,
+          "placeholder": "Enter shortcut..."
         },
         {
           "type": "help",
