@@ -73,9 +73,17 @@ You can also configure areas to match Home App states (Home, Night and Away) and
   "update_interval": 2,
   "map_sensors": true,
   "area_mapping": {
-    "away_areas": ["AREA_1"],
-    "home_areas": ["AREA_2"],
-    "night_areas": ["AREA_3"],
+    "away_areas": {
+      "areas": ["AREA_1"],
+      "shortcut": "p1"
+    },
+    "home_areas": {
+      "areas": ["AREA_2"]
+    },
+    "night_areas": {
+      "areas": ["AREA_3"],
+      "shortcut": "p2"
+    },
     "always_on_areas": ["AREA_ALWAYS_TRIGGERED"]
   },
   "advanced": {
