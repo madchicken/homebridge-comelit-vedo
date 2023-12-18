@@ -93,6 +93,11 @@ export class VedoAlarm {
     this.getAvailableServices();
   }
 
+  getShortcutNumberFromString = (shortcut: string): number => {
+    if (shortcut === 'tot') return 4;
+    return parseInt(shortcut.substring(1));
+  };
+
   update(alarmAreas: AlarmArea[]) {
     const Characteristic = this.platform.homebridge.hap.Characteristic;
     const currentAlarmStatus = this.securityService.getCharacteristic(
@@ -103,6 +108,8 @@ export class VedoAlarm {
       alarmAreas.filter((area: AlarmArea) => area.armed).map(a => a.description.toLowerCase()),
       this.alwaysOnAreas
     ); // alwaysOnAreas should be an empty array if not set
+    const shortcutArmed = alarmAreas.filter((area: AlarmArea) => area.armed).map(a => a.shortcut);
+    this.log.info(`shortcut armed ${JSON.stringify(shortcutArmed)}`);
     const statusArmed = armedAreas.length !== 0;
     if (statusArmed) {
       this.log.debug(`Found ${armedAreas.length} armed areas: ${armedAreas.join(', ')}`);
@@ -135,6 +142,51 @@ export class VedoAlarm {
 
     if (statusArmed) {
       if (
+        this.away_areas.shortcut &&
+        this.away_areas.areas.length &&
+        intersection(armedAreas, this.away_areas.areas).length === armedAreas.length &&
+        shortcutArmed.includes(this.getShortcutNumberFromString(this.away_areas.shortcut))
+      ) {
+        this.log.debug('Setting new status to AWAY_ARM');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.AWAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.AWAY_ARM
+        );
+      } else if (
+        this.home_areas.shortcut &&
+        this.home_areas.areas.length &&
+        intersection(armedAreas, this.home_areas.areas).length === armedAreas.length &&
+        shortcutArmed.includes(this.getShortcutNumberFromString(this.home_areas.shortcut))
+      ) {
+        this.log.debug('Setting new status to STAY_ARM');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.STAY_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.STAY_ARM
+        );
+      } else if (
+        this.night_areas.shortcut &&
+        this.night_areas.areas.length &&
+        intersection(armedAreas, this.night_areas.areas).length === armedAreas.length &&
+        shortcutArmed.includes(this.getShortcutNumberFromString(this.night_areas.shortcut))
+      ) {
+        this.log.debug('Setting new status to NIGHT_ARM');
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemCurrentState,
+          Characteristic.SecuritySystemCurrentState.NIGHT_ARM
+        );
+        this.securityService.updateCharacteristic(
+          Characteristic.SecuritySystemTargetState,
+          Characteristic.SecuritySystemTargetState.NIGHT_ARM
+        );
+      } else if (
         this.away_areas.areas.length &&
         intersection(armedAreas, this.away_areas.areas).length === armedAreas.length
       ) {

@@ -4,8 +4,8 @@
 
 "@alessandrofilino/comelit-client@2.5.1":
   version "2.5.1"
-  resolved "https://npm.pkg.github.com/download/@alessandrofilino/comelit-client/2.5.1/44cf3ade2bbafd0e837e94b3a251ad56e67d2321#44cf3ade2bbafd0e837e94b3a251ad56e67d2321"
-  integrity sha512-7jyQXE9TLkNh25HlPtRgbIGMwt7U0TMqfbJ/WJ8wqQc6U43ixQT9tN4wpXHT4ND0kAtkAG1cfweeHSsB4QndqA==
+  resolved "https://npm.pkg.github.com/download/@alessandrofilino/comelit-client/2.5.1/b55cebbd24fff8341be2791d41a9bca995271b9b#b55cebbd24fff8341be2791d41a9bca995271b9b"
+  integrity sha512-cPrqWJVLr3c2zPFG5R6tiMEnRKev7CL2lfscbBawBHn17f9fRso9e95WSwPugaLlE8BbcZ/qlCDo4zkUsNd05Q==
   dependencies:
     async-mqtt "2.6.1"
     atob "2.1.2"
@@ -570,9 +570,9 @@
   integrity sha512-Klz949h02Gz2uZCMGwDUSDS1YBlTdDDgbWHi+81l29tQALUtvz4rAYi5uoVhE5Lagoq6DeqAUlbrHvW/mXDgdQ==
 
 "@types/node@*":
-  version "20.10.4"
-  resolved "https://registry.npmjs.org/@types/node/-/node-20.10.4.tgz#b246fd84d55d5b1b71bf51f964bd514409347198"
-  integrity sha512-D08YG6rr8X90YB56tSIuBaddy/UXAA9RKJoFvrsnogAum/0pmjkgi4+2nx96A330FmioegBWmEYQ+syqCFaveg==
+  version "20.10.5"
+  resolved "https://registry.npmjs.org/@types/node/-/node-20.10.5.tgz#47ad460b514096b7ed63a1dae26fad0914ed3ab2"
+  integrity sha512-nNPsNE65wjMxEKI93yOP+NPGGBJz/PoN3kZsVLee0XMiJolxSekEVD8wRwBUBqkwc7UWop0edW50yrCQW4CyRw==
   dependencies:
     undici-types "~5.26.4"
 
@@ -1611,9 +1611,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.4.601:
-  version "1.4.614"
-  resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.4.614.tgz#2fe789d61fa09cb875569f37c309d0c2701f91c0"
-  integrity sha512-X4ze/9Sc3QWs6h92yerwqv7aB/uU8vCjZcrMjA8N9R1pjMFRe44dLsck5FzLilOYvcXuDn93B+bpGYyufc70gQ==
+  version "1.4.615"
+  resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.4.615.tgz#b1c41839962d2e4e63dca05519da9040e34848c2"
+  integrity sha512-/bKPPcgZVUziECqDc+0HkT87+0zhaWSZHNXqF8FLd2lQcptpmUFwoCSWjCdOng9Gdq+afKArPdEg/0ZW461Eng==
 
 emoji-regex@^7.0.1:
   version "7.0.3"

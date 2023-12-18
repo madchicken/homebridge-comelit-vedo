@@ -202,9 +202,36 @@ export class ComelitVedoPlatform implements DynamicPlatformPlugin {
       const area_mapping = this.config.area_mapping || {};
       const config: VedoAlarmConfig = {
         ...advanced,
-        away_areas: area_mapping.away_areas ? area_mapping.away_areas : { areas: [] },
-        home_areas: area_mapping.home_areas ? area_mapping.home_areas : { areas: [] },
-        night_areas: area_mapping.night_areas ? area_mapping.night_areas : { areas: [] },
+        away_areas: {
+          areas:
+            area_mapping.away_areas && area_mapping.away_areas.areas
+              ? area_mapping.away_areas.areas
+              : [],
+          shortcut:
+            area_mapping.away_areas && area_mapping.away_areas.shortcut
+              ? area_mapping.away_areas.shortcut
+              : null,
+        },
+        home_areas: {
+          areas:
+            area_mapping.home_areas && area_mapping.home_areas.areas
+              ? area_mapping.home_areas.areas
+              : [],
+          shortcut:
+            area_mapping.home_areas && area_mapping.home_areas.shortcut
+              ? area_mapping.home_areas.shortcut
+              : null,
+        },
+        night_areas: {
+          areas:
+            area_mapping.night_areas && area_mapping.night_areas.areas
+              ? area_mapping.night_areas.areas
+              : [],
+          shortcut:
+            area_mapping.night_areas && area_mapping.night_areas.shortcut
+              ? area_mapping.night_areas.shortcut
+              : null,
+        },
       };
       const accessory = this.createHapAccessory('VEDO Alarm', Categories.SECURITY_SYSTEM);
       this.alarm = new VedoAlarm(
