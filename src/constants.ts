@@ -1,2 +1,2 @@
 export const PLATFORM_NAME = 'ComelitVedo';
-export const PLUGIN_IDENTIFIER = '@alessandrofilino/homebridge-comelit-vedo-platform';
+export const PLUGIN_IDENTIFIER = 'homebridge-comelit-vedo-platform';

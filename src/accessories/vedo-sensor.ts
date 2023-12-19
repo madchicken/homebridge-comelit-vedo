@@ -1,4 +1,4 @@
-import { ZoneStatus } from '@alessandrofilino/comelit-client';
+import { ZoneStatus } from 'comelit-client';
 import {
   CharacteristicSetCallback,
   CharacteristicGetCallback,

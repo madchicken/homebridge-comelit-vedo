@@ -1,4 +1,4 @@
-import { sleep, VedoClientConfig } from '@alessandrofilino/comelit-client';
+import { sleep, VedoClientConfig } from 'comelit-client';
 import { ExtendedAreas, VedoAlarm, VedoAlarmConfig } from './accessories/vedo-alarm';
 import { VedoSensor } from './accessories/vedo-sensor';
 import express, { Express } from 'express';

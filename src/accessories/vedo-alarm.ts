@@ -5,7 +5,7 @@ import {
   VedoClientConfig,
   ZoneDesc,
   ZoneStatus,
-} from '@alessandrofilino/comelit-client';
+} from 'comelit-client';
 import { intersection } from 'lodash';
 import {
   CharacteristicSetCallback,
@@ -109,7 +109,6 @@ export class VedoAlarm {
       this.alwaysOnAreas
     ); // alwaysOnAreas should be an empty array if not set
     const shortcutArmed = alarmAreas.filter((area: AlarmArea) => area.armed).map(a => a.shortcut);
-    this.log.info(`shortcut armed ${JSON.stringify(shortcutArmed)}`);
     const statusArmed = armedAreas.length !== 0;
     if (statusArmed) {
       this.log.debug(`Found ${armedAreas.length} armed areas: ${armedAreas.join(', ')}`);
