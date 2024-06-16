@@ -48,6 +48,7 @@ export class VedoAlarm {
   private readonly alwaysOnAreas: string[];
   private zones: ZoneDesc;
   private areas: AreaDesc;
+  private triggerCount: number;
 
   constructor(
     platform: ComelitVedoPlatform,
@@ -64,6 +65,7 @@ export class VedoAlarm {
     this.name = 'VEDO Alarm @ ' + address;
     this.client = new VedoClient(address, port, config);
     this.client.setLogger(platform.log);
+    this.triggerCount = 0;
     this.away_areas = {
       areas:
         config.away_areas && config.away_areas.areas
@@ -125,12 +127,15 @@ export class VedoAlarm {
         .map(a => a.description)
         .join(', ');
       this.log.warn(`Alarm triggered in area ${s}`);
+      this.triggerCount++;
     } else {
+      this.triggerCount = 0;
       this.log.debug('No triggering areas');
     }
     if (
       triggered &&
-      currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED
+      currentAlarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED &&
+      this.triggerCount >= 3
     ) {
       this.securityService.updateCharacteristic(
         Characteristic.SecuritySystemCurrentState,
